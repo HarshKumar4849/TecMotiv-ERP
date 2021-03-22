@@ -7,23 +7,23 @@ import format from "dayjs";
 const { Content } = Layout;
 const { MonthPicker, RangePicker, WeekPicker } = DatePicker;
 function CustomerPage() {
-  const target = "patient";
+  const target = "client";
   const columns = [
     {
-      title: "Name",
-      dataIndex: "name",
+      title: "Company",
+      dataIndex: "company",
     },
     {
-      title: "Surname",
-      dataIndex: "surname",
+      title: "Manager Surname",
+      dataIndex: "managerSurname",
     },
     {
-      title: "Birthday",
-      dataIndex: "birthday",
+      title: "Manager Name",
+      dataIndex: "managerName",
     },
     {
-      title: "Gender",
-      dataIndex: "sexe",
+      title: "Email",
+      dataIndex: "email",
     },
   ];
   return (
