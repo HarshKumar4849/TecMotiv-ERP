@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Dropdown,
   Menu,
@@ -20,34 +20,33 @@ import { useSelector, useDispatch } from "react-redux";
 import FormCustomer from "./formCustomer";
 import { listAction } from "@/redux/crud/actions";
 import { selectListItems } from "@/redux/crud/selectors";
+const dropDownRowMenu = (currentRow) => {
+  function Show() {
+    console.log(currentRow._id);
+  }
+  function Edit() {
+    console.log(currentRow._id);
+  }
+  function Delete() {
+    console.log(currentRow._id);
+  }
+
+  return (
+    <Menu style={{ width: 130 }}>
+      <Menu.Item icon={<EyeOutlined />} onClick={Show}>
+        Show
+      </Menu.Item>
+      <Menu.Item icon={<EditOutlined />} onClick={Edit}>
+        Edit
+      </Menu.Item>
+      <Menu.Item icon={<DeleteOutlined />} onClick={Delete}>
+        Delete
+      </Menu.Item>
+    </Menu>
+  );
+};
 
 export default function CustomerTable({ entity, columns }) {
-  const dropDownRowMenu = (currentRow) => {
-    function Show() {
-      console.log(currentRow._id);
-    }
-    function Edit() {
-      console.log(currentRow._id);
-    }
-    function Delete() {
-      console.log(currentRow._id);
-    }
-
-    return (
-      <Menu style={{ width: 130 }}>
-        <Menu.Item icon={<EyeOutlined />} onClick={Show}>
-          Show
-        </Menu.Item>
-        <Menu.Item icon={<EditOutlined />} onClick={Edit}>
-          Edit
-        </Menu.Item>
-        <Menu.Item icon={<DeleteOutlined />} onClick={Delete}>
-          Delete
-        </Menu.Item>
-      </Menu>
-    );
-  };
-
   columns = [
     ...columns,
     {
@@ -66,18 +65,23 @@ export default function CustomerTable({ entity, columns }) {
     isLoading: listIsLoading,
     isSuccess: listIsSuccess,
   } = useSelector(selectListItems);
+  const { pagination } = listResult;
 
-  const handelDataTableLoad = (listResult) => {
-    const { pagination } = listResult;
+  const handelDataTableLoad = useCallback((pagination) => {
     dispatch(listAction(entity, pagination.current));
-  };
-  useEffect(() => {
-    handelDataTableLoad(listResult);
   }, []);
+  // const handelDataTableLoad = (listResult) => {
 
-  const handleTableChange = (pagination) => {
-    handelDataTableLoad({ pagination });
-  };
+  // };
+  useEffect(() => {
+    handelDataTableLoad(pagination);
+  }, []);
+  // const handelDataTableLoad = useCallback(() => {
+  //   handelDataTableLoad(listResult);
+  // }, []);
+  // const handleTableChange = (pagination) => {
+  //   handelDataTableLoad({ pagination });
+  // };
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -144,7 +148,7 @@ export default function CustomerTable({ entity, columns }) {
         dataSource={listResult.items}
         pagination={listResult.pagination}
         loading={listIsLoading}
-        onChange={handleTableChange}
+        onChange={handelDataTableLoad}
       />
     </>
   );
