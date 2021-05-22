@@ -52,24 +52,7 @@ export default function Invoice() {
       },
     },
   ];
-  const readColumns = [
-    {
-      title: "Nom",
-      dataIndex: "name",
-    },
-    {
-      title: "Prenom",
-      dataIndex: "surname",
-    },
-    {
-      title: "Date de naissance",
-      dataIndex: "birthday",
-    },
-    {
-      title: "Sexe",
-      dataIndex: "sexe",
-    },
-  ];
+
   const panelTitle = "invoice";
   const dataTableTitle = "invoices Lists";
   const ADD_NEW_ENTITY = "Add new invoice";
@@ -87,7 +70,7 @@ export default function Invoice() {
     ADD_NEW_ENTITY,
     UPDATE_ENTITY,
     DATATABLE_TITLE,
-    readColumns,
+
     dataTableColumns,
     searchConfig,
     entityDisplayLabels,
