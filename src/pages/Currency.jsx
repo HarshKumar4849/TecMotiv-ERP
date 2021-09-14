@@ -76,11 +76,11 @@ export default function Currency() {
     },
   ];
 
-  const ADD_NEW_ENTITY = "Add new customer";
-  const DATATABLE_TITLE = "customers List";
-  const ENTITY_NAME = "customer";
-  const CREATE_ENTITY = "Create customer";
-  const UPDATE_ENTITY = "Update customer";
+  const ADD_NEW_ENTITY = "Add new currency";
+  const DATATABLE_TITLE = "currencys List";
+  const ENTITY_NAME = "currency";
+  const CREATE_ENTITY = "Create currency";
+  const UPDATE_ENTITY = "Update currency";
   const PANEL_TITLE = "Currency Panel";
 
   const config = {
