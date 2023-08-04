@@ -166,7 +166,7 @@ const LoginPage = () => {
                 >
                   Log in
                 </Button>
-                Or <a href="">register now!</a>
+                Or <a href="/register">register now!</a>
               </Form.Item>
             </Form>
           </div>
