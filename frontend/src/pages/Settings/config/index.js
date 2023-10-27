@@ -1,13 +1,14 @@
+import lang from '@/lang/language';
+
 const entity = 'setting';
 
 const Labels = {
-  PANEL_TITLE: 'Settings',
-  dataTableTitle: 'Settings List',
-  ADD_NEW_ENTITY: 'Add New Settings',
-  DATATABLE_TITLE: 'Settings List',
-  ENTITY_NAME: 'Settings',
-  CREATE_ENTITY: 'Save Settings',
-  UPDATE_ENTITY: 'Update Settings',
+  PANEL_TITLE: lang.settings,
+  DATATABLE_TITLE: lang.settings_list,
+  ADD_NEW_ENTITY: lang.add_new_settings,
+  ENTITY_NAME: lang.settings,
+  CREATE_ENTITY: lang.save,
+  UPDATE_ENTITY: lang.update,
 };
 
 const configPage = {
