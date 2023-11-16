@@ -1,6 +1,6 @@
 import SetingsSection from '../components/SetingsSection';
 import UpdateSettingModule from '../components/UpdateSettingModule';
-import MoneyFormSettingForm from './forms/MoneyFormSettingForm';
+import MoneyFormSettingForm from './SettingsForm';
 import useLanguage from '@/locale/useLanguage';
 
 export default function MoneyFormatSettingsModule({ config }) {
