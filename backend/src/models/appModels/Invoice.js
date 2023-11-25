@@ -14,9 +14,10 @@ const invoiceSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  content: String,
   recurring: {
     type: String,
-    default: '0',
+    enum: ['daily', 'weekly', 'monthly', 'annually', 'quarter'],
   },
   date: {
     type: Date,
@@ -26,18 +27,33 @@ const invoiceSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  convertedFrom: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'Quote',
-  },
   client: {
     type: mongoose.Schema.ObjectId,
     ref: 'Client',
     required: true,
     autopopulate: true,
   },
+  converted: {
+    from: {
+      type: String,
+      enum: ['quote', 'offer'],
+    },
+    offer: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Offer',
+    },
+    quote: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Quote',
+    },
+  },
   items: [
     {
+      product: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Product',
+        required: true,
+      },
       itemName: {
         type: String,
         required: true,
@@ -47,6 +63,7 @@ const invoiceSchema = new mongoose.Schema({
       },
       quantity: {
         type: Number,
+        default: 1,
         required: true,
       },
       price: {
@@ -119,12 +136,24 @@ const invoiceSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    enum: ['draft', 'pending', 'sent', 'refunded', 'cancelled', 'on hold'],
     default: 'draft',
   },
-  pdfPath: {
+  pdf: {
     type: String,
-    default: '',
   },
+  files: [
+    {
+      id: String,
+      name: String,
+      path: String,
+      description: String,
+      isPublic: {
+        type: Boolean,
+        default: true,
+      },
+    },
+  ],
   updated: {
     type: Date,
     default: Date.now,
