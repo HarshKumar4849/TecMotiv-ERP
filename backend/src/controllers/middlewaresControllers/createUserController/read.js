@@ -7,7 +7,7 @@ const read = async (userModel, req, res) => {
   const tmpResult = await User.findOne({
     _id: req.params.id,
     removed: false,
-  });
+  }).exec();
   // If no results found, return document not found
   if (!tmpResult) {
     return res.status(404).json({
