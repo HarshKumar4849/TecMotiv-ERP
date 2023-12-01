@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
 
-const Model = mongoose.model('Client');
 const People = mongoose.model('People');
 const Company = mongoose.model('Company');
 
-const create = async (req, res) => {
+const create = async (Model, req, res) => {
   // Creating a new document in the collection
 
   if (req.body.type === 'people') {
@@ -26,7 +25,7 @@ const create = async (req, res) => {
         }
       ).exec();
       req.body.name = firstname + ' ' + lastname;
-      req.body.company = undefined;
+      req.body.company = null;
     }
   } else {
     if (!req.body.company) {
@@ -47,7 +46,7 @@ const create = async (req, res) => {
         }
       ).exec();
       req.body.name = name;
-      req.body.people = undefined;
+      req.body.people = null;
     }
   }
 

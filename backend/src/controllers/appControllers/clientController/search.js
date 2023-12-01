@@ -1,9 +1,6 @@
 const { migrate } = require('./migrate');
-const mongoose = require('mongoose');
 
-const Model = mongoose.model('Client');
-
-const search = async (req, res) => {
+const search = async (Model, req, res) => {
   // console.log(req.query.fields)
   if (req.query.q === undefined || req.query.q.trim() === '') {
     return res
@@ -15,9 +12,7 @@ const search = async (req, res) => {
       })
       .end();
   }
-  const fieldsArray = req.query.fields
-    ? req.query.fields.split(',')
-    : ['name', 'surname', 'birthday'];
+  const fieldsArray = req.query.fields ? req.query.fields.split(',') : ['name'];
 
   const fields = { $or: [] };
 

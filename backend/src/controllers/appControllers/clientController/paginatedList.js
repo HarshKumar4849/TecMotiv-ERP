@@ -1,9 +1,6 @@
 const { migrate } = require('./migrate');
-const mongoose = require('mongoose');
 
-const Model = mongoose.model('Client');
-
-const paginatedList = async (req, res) => {
+const paginatedList = async (Model, req, res) => {
   const page = req.query.page || 1;
 
   const limit = parseInt(req.query.items) || 10;
