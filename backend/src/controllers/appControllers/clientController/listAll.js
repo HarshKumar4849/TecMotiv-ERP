@@ -1,10 +1,6 @@
 const { migrate } = require('./migrate');
 
-const mongoose = require('mongoose');
-
-const Model = mongoose.model('Client');
-
-const listAll = async (req, res) => {
+const listAll = async (Model, req, res) => {
   const sort = parseInt(req.query.sort) || 'desc';
 
   //  Query the database for a list of all results
@@ -19,7 +15,7 @@ const listAll = async (req, res) => {
     });
   } else {
     return res.status(203).json({
-      success: false,
+      success: true,
       result: [],
       message: 'Collection is Empty',
     });

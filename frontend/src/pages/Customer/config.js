@@ -1,11 +1,12 @@
 export const fields = {
   type: {
-    type: 'select',
+    type: 'selectwithfeedback',
     options: [
       { value: 'people', label: 'people' },
       { value: 'company', label: 'company' },
     ],
     required: true,
+    hasFeedback: true,
   },
   name: {
     type: 'string',
@@ -26,12 +27,13 @@ export const fields = {
   },
   people: {
     type: 'search',
-    label: 'person',
+    label: 'people',
     entity: 'people',
     displayLabels: ['firstname', 'lastname'],
     searchFields: 'firstname,lastname',
     dataIndex: ['people', 'firstname'],
     disableForTable: true,
+    feedback: 'people',
   },
   company: {
     type: 'search',
@@ -41,5 +43,6 @@ export const fields = {
     searchFields: 'name',
     dataIndex: ['company', 'name'],
     disableForTable: true,
+    feedback: 'company',
   },
 };
