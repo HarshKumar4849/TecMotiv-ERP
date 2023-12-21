@@ -10,7 +10,7 @@ import { useMoney } from '@/settings';
 
 import RecordPayment from './RecordPayment';
 import useLanguage from '@/locale/useLanguage';
-
+import { tagColor } from '@/utils/statusTagColor';
 import { useNavigate } from 'react-router-dom';
 
 export default function Payment({ config, currentItem }) {
@@ -61,7 +61,11 @@ export default function Payment({ config, currentItem }) {
               currentErp.year || ''
             }`}
             ghost={false}
-            tags={<Tag color="volcano">{currentErp.status}</Tag>}
+            tags={
+              <Tag color={tagColor(currentErp.paymentStatus)?.color}>
+                {currentErp.paymentStatus && translate(currentErp.paymentStatus)}
+              </Tag>
+            }
             // subTitle="This is cuurent erp page"
             extra={[
               <Button
@@ -102,7 +106,9 @@ export default function Payment({ config, currentItem }) {
             <Descriptions.Item label={translate('phone')}>{client.phone}</Descriptions.Item>
             <Divider dashed />
             <Descriptions.Item label={translate('payment status')}>
-              {currentErp.paymentStatus}
+              <Tag color={tagColor(currentErp.paymentStatus)?.color}>
+                {currentErp.paymentStatus && translate(currentErp.paymentStatus)}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label={translate('sub total')}>
               {money.amountFormatter({ amount: currentErp.subTotal })}
