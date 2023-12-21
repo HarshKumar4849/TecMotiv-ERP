@@ -12,6 +12,7 @@ import ItemRow from '@/modules/ErpPanelModule/ItemRow';
 
 import MoneyInputFormItem from '@/components/MoneyInputFormItem';
 import { selectFinanceSettings } from '@/redux/settings/selectors';
+import { useDate } from '@/settings';
 import useLanguage from '@/locale/useLanguage';
 
 import calculate from '@/utils/calculate';
@@ -30,6 +31,7 @@ export default function InvoiceForm({ subTotal = 0, current = null }) {
 
 function LoadInvoiceForm({ subTotal = 0, current = null }) {
   const translate = useLanguage();
+  const { dateFormat } = useDate();
   const { last_invoice_number } = useSelector(selectFinanceSettings);
   const [total, setTotal] = useState(0);
   const [taxRate, setTaxRate] = useState(0);
@@ -142,7 +144,7 @@ function LoadInvoiceForm({ subTotal = 0, current = null }) {
             ]}
             initialValue={dayjs()}
           >
-            <DatePicker style={{ width: '100%' }} format={'DD/MM/YYYY'} />
+            <DatePicker style={{ width: '100%' }} format={dateFormat} />
           </Form.Item>
         </Col>
         <Col className="gutter-row" span={7}>
@@ -157,7 +159,7 @@ function LoadInvoiceForm({ subTotal = 0, current = null }) {
             ]}
             initialValue={dayjs().add(30, 'days')}
           >
-            <DatePicker style={{ width: '100%' }} format={'DD/MM/YYYY'} />
+            <DatePicker style={{ width: '100%' }} format={dateFormat} />
           </Form.Item>
         </Col>
       </Row>
