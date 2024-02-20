@@ -2,9 +2,14 @@ const multer = require('multer');
 const path = require('path');
 const { slugify } = require('transliteration');
 
-const fileFilter = require('./utils/fileFilter');
+const fileFilter = require('./utils/LocalfileFilter');
 
-const singleStorageUpload = ({ entity, fileType = 'default', fieldName = 'file' }) => {
+const singleStorageUpload = ({
+  entity,
+  fileType = 'default',
+  uploadFieldName = 'file',
+  fieldName = 'file',
+}) => {
   var diskStorage = multer.diskStorage({
     destination: function (req, file, cb) {
       cb(null, `src/public/uploads/${entity}`);
