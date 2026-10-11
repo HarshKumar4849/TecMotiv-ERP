@@ -1,24 +1,62 @@
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { Avatar, Dropdown, Layout, Badge, Button } from 'antd';
-
-// import Notifications from '@/components/Notification';
-
-import { LogoutOutlined, ToolOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Dropdown, Layout, Tag, Space, Badge, Button, Tooltip } from 'antd';
+import {
+  LogoutOutlined,
+  ToolOutlined,
+  UserOutlined,
+  SafetyCertificateOutlined,
+  ApartmentOutlined,
+  BellOutlined,
+} from '@ant-design/icons';
 
 import { selectCurrentAdmin } from '@/redux/auth/selectors';
-
 import { FILE_BASE_URL } from '@/config/serverApiConfig';
-
 import useLanguage from '@/locale/useLanguage';
-
-import UpgradeButton from './UpgradeButton';
+import { canAccessModule, normalizeRole, ROLES } from '@/utils/rbac';
+import { request } from '@/request';
+import { NotificationCenterDrawer } from '@/modules/NotificationModule';
 
 export default function HeaderContent() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const { Header } = Layout;
 
   const translate = useLanguage();
+  const rawRole = currentAdmin?.role || 'EMPLOYEE';
+  const role = normalizeRole(rawRole);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await request.get({ entity: 'notification/unread-count' });
+      if (res && res.success && res.result) {
+        setUnreadCount(res.result.count || 0);
+      }
+    } catch (e) {
+      // quiet catch
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getRoleColor = (r) => {
+    switch (normalizeRole(r)) {
+      case ROLES.ADMIN:
+        return 'purple';
+      case ROLES.HR:
+        return 'magenta';
+      case ROLES.EMPLOYEE:
+      default:
+        return 'blue';
+    }
+  };
 
   const ProfileDropdown = () => {
     const navigate = useNavigate();
@@ -29,25 +67,25 @@ export default function HeaderContent() {
           className="last"
           src={currentAdmin?.photo ? FILE_BASE_URL + currentAdmin?.photo : undefined}
           style={{
-            color: '#f56a00',
-            backgroundColor: currentAdmin?.photo ? 'none' : '#fde3cf',
-            boxShadow: 'rgba(150, 190, 238, 0.35) 0px 0px 6px 1px',
+            color: '#1677ff',
+            backgroundColor: currentAdmin?.photo ? 'none' : '#e6f4ff',
+            boxShadow: 'rgba(22, 119, 255, 0.2) 0px 0px 6px 1px',
           }}
         >
           {currentAdmin?.name?.charAt(0)?.toUpperCase()}
         </Avatar>
         <div className="profileDropdownInfo">
-          <p>
+          <p style={{ fontWeight: 600 }}>
             {currentAdmin?.name} {currentAdmin?.surname}
           </p>
-          <p>{currentAdmin?.email}</p>
+          <p style={{ fontSize: 12, color: '#8c8c8c' }}>{currentAdmin?.email}</p>
         </div>
       </div>
     );
   };
 
   const DropdownMenu = ({ text }) => {
-    return <span style={{}}>{text}</span>;
+    return <span>{text}</span>;
   };
 
   const items = [
@@ -67,16 +105,27 @@ export default function HeaderContent() {
         </Link>
       ),
     },
-    {
-      icon: <ToolOutlined />,
-      key: 'settingApp',
-      label: <Link to={'/settings'}>{translate('app_settings')}</Link>,
-    },
-
+    ...(canAccessModule(role, 'admin')
+      ? [
+          {
+            icon: <SafetyCertificateOutlined />,
+            key: 'adminPanel',
+            label: <Link to={'/admin'}>{translate('Admin Panel')}</Link>,
+          },
+        ]
+      : []),
+    ...(canAccessModule(role, 'settings')
+      ? [
+          {
+            icon: <ToolOutlined />,
+            key: 'settingApp',
+            label: <Link to={'/settings'}>{translate('app_settings')}</Link>,
+          },
+        ]
+      : []),
     {
       type: 'divider',
     },
-
     {
       icon: <LogoutOutlined />,
       key: 'logout',
@@ -87,12 +136,14 @@ export default function HeaderContent() {
   return (
     <Header
       style={{
-        padding: '20px',
+        padding: '16px 28px',
         background: '#ffffff',
         display: 'flex',
         flexDirection: 'row-reverse',
         justifyContent: 'flex-start',
-        gap: ' 15px',
+        alignItems: 'center',
+        gap: '16px',
+        borderBottom: '1px solid #f0f0f0',
       }}
     >
       <Dropdown
@@ -101,33 +152,68 @@ export default function HeaderContent() {
         }}
         trigger={['click']}
         placement="bottomRight"
-        stye={{ width: '280px', float: 'right' }}
+        style={{ width: '280px', float: 'right' }}
       >
-        {/* <Badge dot> */}
         <Avatar
           className="last"
           src={currentAdmin?.photo ? FILE_BASE_URL + currentAdmin?.photo : undefined}
           style={{
-            color: '#f56a00',
-            backgroundColor: currentAdmin?.photo ? 'none' : '#fde3cf',
-            boxShadow: 'rgba(150, 190, 238, 0.35) 0px 0px 10px 2px',
-            float: 'right',
+            color: '#1677ff',
+            backgroundColor: currentAdmin?.photo ? 'none' : '#e6f4ff',
+            boxShadow: 'rgba(22, 119, 255, 0.2) 0px 0px 8px 1px',
             cursor: 'pointer',
           }}
           size="large"
         >
           {currentAdmin?.name?.charAt(0)?.toUpperCase()}
         </Avatar>
-        {/* </Badge> */}
       </Dropdown>
 
-      {/* <AppsButton /> */}
+      {/* Notification Center Trigger Bell */}
+      <Tooltip title="Notifications">
+        <Badge count={unreadCount} overflowCount={99} size="small" offset={[-4, 4]}>
+          <Button
+            type="text"
+            shape="circle"
+            icon={<BellOutlined style={{ fontSize: 20, color: '#595959' }} />}
+            onClick={() => setIsNotificationDrawerOpen(true)}
+            style={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: unreadCount > 0 ? '#f0f7ff' : 'transparent',
+              border: unreadCount > 0 ? '1px solid #bae0ff' : 'none',
+            }}
+          />
+        </Badge>
+      </Tooltip>
 
-      <UpgradeButton />
+      <Space size={8}>
+        {currentAdmin?.department && (
+          <Tag
+            icon={<ApartmentOutlined />}
+            color="default"
+            style={{ borderRadius: 12, padding: '2px 10px', fontSize: 12 }}
+          >
+            {currentAdmin.department}
+          </Tag>
+        )}
+        <Tag
+          color={getRoleColor(role)}
+          style={{ borderRadius: 12, padding: '2px 10px', fontWeight: 600, fontSize: 12 }}
+        >
+          {normalizeRole(role)}
+        </Tag>
+      </Space>
+
+      {/* Notification Center Slide-Out Drawer */}
+      <NotificationCenterDrawer
+        visible={isNotificationDrawerOpen}
+        onClose={() => setIsNotificationDrawerOpen(false)}
+        onRefreshCount={setUnreadCount}
+      />
     </Header>
   );
 }
-
-//  console.log(
-//    '🚀 Welcome to IDURAR ERP CRM! Did you know that we also offer commercial customization services? Contact us at hello@idurarapp.com for more information.'
-//  );

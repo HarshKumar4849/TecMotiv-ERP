@@ -1,31 +1,36 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Drawer, Layout, Menu } from 'antd';
+import { useSelector } from 'react-redux';
+import { selectCurrentAdmin } from '@/redux/auth/selectors';
+import { canAccessModule } from '@/utils/rbac';
 
 import { useAppContext } from '@/context/appContext';
 
 import useLanguage from '@/locale/useLanguage';
 import logoIcon from '@/style/images/logo-icon.svg';
-import logoText from '@/style/images/logo-text.svg';
 
 import useResponsive from '@/hooks/useResponsive';
+import { SHOUTOUT_URL } from '@/config/serverApiConfig';
 
 import {
-  SettingOutlined,
-  CustomerServiceOutlined,
-  ContainerOutlined,
-  FileSyncOutlined,
   DashboardOutlined,
-  TagOutlined,
-  TagsOutlined,
-  UserOutlined,
-  CreditCardOutlined,
+  TeamOutlined,
+  ClockCircleOutlined,
+  CoffeeOutlined,
+  CheckSquareOutlined,
+  ProjectOutlined,
+  DollarOutlined,
+  CalendarOutlined,
+  GiftOutlined,
+  TrophyOutlined,
+  NotificationOutlined,
+  FileProtectOutlined,
+  SafetyCertificateOutlined,
+  FileTextOutlined,
+  CloudOutlined,
+  SettingOutlined,
   MenuOutlined,
-  FileOutlined,
-  ShopOutlined,
-  FilterOutlined,
-  WalletOutlined,
-  ReconciliationOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -43,69 +48,123 @@ function Sidebar({ collapsible, isMobile = false }) {
   const { isNavMenuClose } = stateApp;
   const { navMenu } = appContextAction;
   const [showLogoApp, setLogoApp] = useState(isNavMenuClose);
-  const [currentPath, setCurrentPath] = useState(location.pathname.slice(1));
+  const [currentPath, setCurrentPath] = useState(location.pathname.slice(1) || 'dashboard');
 
   const translate = useLanguage();
   const navigate = useNavigate();
+
+  const currentAdmin = useSelector(selectCurrentAdmin);
+  const userRole = currentAdmin?.role || 'EMPLOYEE';
 
   const items = [
     {
       key: 'dashboard',
       icon: <DashboardOutlined />,
-      label: <Link to={'/'}>{translate('dashboard')}</Link>,
+      label: <Link to={'/'}>{translate('Dashboard')}</Link>,
     },
     {
-      key: 'customer',
-      icon: <CustomerServiceOutlined />,
-      label: <Link to={'/customer'}>{translate('customers')}</Link>,
-    },
-
-    {
-      key: 'invoice',
-      icon: <ContainerOutlined />,
-      label: <Link to={'/invoice'}>{translate('invoices')}</Link>,
+      key: 'employees',
+      icon: <TeamOutlined />,
+      label: <Link to={'/employees'}>{translate('Employees')}</Link>,
     },
     {
-      key: 'quote',
-      icon: <FileSyncOutlined />,
-      label: <Link to={'/quote'}>{translate('quote')}</Link>,
+      key: 'attendance',
+      icon: <ClockCircleOutlined />,
+      label: <Link to={'/attendance'}>{translate('Attendance')}</Link>,
     },
     {
-      key: 'payment',
-      icon: <CreditCardOutlined />,
-      label: <Link to={'/payment'}>{translate('payments')}</Link>,
-    },
-
-    {
-      key: 'paymentMode',
-      label: <Link to={'/payment/mode'}>{translate('payments_mode')}</Link>,
-      icon: <WalletOutlined />,
+      key: 'leave',
+      icon: <CoffeeOutlined />,
+      label: <Link to={'/leave'}>{translate('Leave')}</Link>,
     },
     {
-      key: 'taxes',
-      label: <Link to={'/taxes'}>{translate('taxes')}</Link>,
-      icon: <ShopOutlined />,
+      key: 'tasks',
+      icon: <CheckSquareOutlined />,
+      label: <Link to={'/tasks'}>{translate('Tasks')}</Link>,
     },
     {
-      key: 'generalSettings',
-      label: <Link to={'/settings'}>{translate('settings')}</Link>,
+      key: 'projects',
+      icon: <ProjectOutlined />,
+      label: <Link to={'/projects'}>{translate('Projects')}</Link>,
+    },
+    {
+      key: 'payroll',
+      icon: <DollarOutlined />,
+      label: <Link to={'/payroll'}>{translate('Payroll')}</Link>,
+    },
+    {
+      key: 'documents',
+      icon: <FileProtectOutlined />,
+      label: <Link to={'/documents'}>{translate('Document Vault')}</Link>,
+    },
+    {
+      key: 'calendar',
+      icon: <CalendarOutlined />,
+      label: <Link to={'/calendar'}>{translate('Calendar')}</Link>,
+    },
+    {
+      key: 'events',
+      icon: <GiftOutlined />,
+      label: <Link to={'/events'}>{translate('Events & Celebrations')}</Link>,
+    },
+    {
+      key: 'recognition',
+      icon: <TrophyOutlined />,
+      label: (
+        <a href={SHOUTOUT_URL} rel="noopener noreferrer">
+          {translate('Recognition')}
+        </a>
+      ),
+      onClick: () => {
+        window.location.href = SHOUTOUT_URL;
+      },
+    },
+    {
+      key: 'bulletin',
+      icon: <NotificationOutlined />,
+      label: <Link to={'/bulletin'}>{translate('Bulletin / News')}</Link>,
+    },
+    {
+      key: 'policies',
+      icon: <FileProtectOutlined />,
+      label: <Link to={'/policies'}>{translate('Policies')}</Link>,
+    },
+    {
+      key: 'admin',
+      icon: <SafetyCertificateOutlined />,
+      label: <Link to={'/admin'}>{translate('Admin')}</Link>,
+    },
+    {
+      key: 'itadmin',
+      icon: <CloudOutlined />,
+      label: <Link to={'/it-admin'}>{translate('IT & Digital Admin')}</Link>,
+    },
+    {
+      key: 'templates',
+      icon: <FileTextOutlined />,
+      label: <Link to={'/templates'}>{translate('Templates')}</Link>,
+    },
+    {
+      key: 'settings',
       icon: <SettingOutlined />,
-    },
-    {
-      key: 'about',
-      label: <Link to={'/about'}>{translate('about')}</Link>,
-      icon: <ReconciliationOutlined />,
+      label: <Link to={'/settings'}>{translate('Settings')}</Link>,
     },
   ];
 
   useEffect(() => {
-    if (location)
-      if (currentPath !== location.pathname) {
-        if (location.pathname === '/') {
-          setCurrentPath('dashboard');
-        } else setCurrentPath(location.pathname.slice(1));
+    if (location) {
+      const path = location.pathname.slice(1);
+      if (path === '' || path === '/') {
+        setCurrentPath('dashboard');
+      } else {
+        // Menu keys are unsegmented (e.g. "itadmin") while URLs can contain
+        // separators (e.g. "/it-admin"). Normalize so the active item is
+        // actually highlighted.
+        const primary = path.split('/')[0].replace(/[-_\s]/g, '').toLowerCase();
+        setCurrentPath(primary);
       }
-  }, [location, currentPath]);
+    }
+  }, [location]);
 
   useEffect(() => {
     if (isNavMenuClose) {
@@ -118,6 +177,7 @@ function Sidebar({ collapsible, isMobile = false }) {
     }, 200);
     return () => clearTimeout(timer);
   }, [isNavMenuClose]);
+
   const onCollapse = () => {
     navMenu.collapse();
   };
@@ -132,14 +192,11 @@ function Sidebar({ collapsible, isMobile = false }) {
       style={{
         overflow: 'auto',
         height: '100vh',
-
         position: isMobile ? 'absolute' : 'relative',
         bottom: '20px',
         ...(!isMobile && {
-          // border: 'none',
-          ['left']: '20px',
+          left: '20px',
           top: '20px',
-          // borderRadius: '8px',
         }),
       }}
       theme={'light'}
@@ -149,29 +206,48 @@ function Sidebar({ collapsible, isMobile = false }) {
         onClick={() => navigate('/')}
         style={{
           cursor: 'pointer',
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
         }}
       >
-        <img src={logoIcon} alt="Logo" style={{ marginLeft: '-5px', height: '40px' }} />
+        <img src={logoIcon} alt="TecMotiv Logo" style={{ height: '32px' }} />
 
         {!showLogoApp && (
-          <img
-            src={logoText}
-            alt="Logo"
-            style={{
-              marginTop: '3px',
-              marginLeft: '10px',
-              height: '38px',
-            }}
-          />
+          <div style={{ marginLeft: 12, lineHeight: 1.2 }}>
+            <span
+              style={{
+                fontSize: '17px',
+                fontWeight: '800',
+                letterSpacing: '0.3px',
+                color: '#22242a',
+                display: 'block',
+              }}
+            >
+              Tecmotiv
+            </span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                letterSpacing: '0.8px',
+                color: '#0097a7',
+                textTransform: 'uppercase',
+              }}
+            >
+              Solutions ERP
+            </span>
+          </div>
         )}
       </div>
       <Menu
-        items={items}
+        items={items.filter((item) => canAccessModule(userRole, item.key))}
         mode="inline"
         theme={'light'}
         selectedKeys={[currentPath]}
         style={{
           width: 256,
+          borderRight: 0,
         }}
       />
     </Sider>
@@ -194,13 +270,12 @@ function MobileSidebar() {
         size="large"
         onClick={showDrawer}
         className="mobile-sidebar-btn"
-        style={{ ['marginLeft']: 25 }}
+        style={{ marginLeft: 25 }}
       >
         <MenuOutlined style={{ fontSize: 18 }} />
       </Button>
       <Drawer
         width={250}
-        // style={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}
         placement={'left'}
         closable={false}
         onClose={onClose}

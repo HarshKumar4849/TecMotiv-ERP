@@ -1,32 +1,32 @@
 import { lazy } from 'react';
-
 import { Navigate } from 'react-router-dom';
+import RoleGuard from './RoleGuard';
 
 const Logout = lazy(() => import('@/pages/Logout.jsx'));
 const NotFound = lazy(() => import('@/pages/NotFound.jsx'));
-
-
-const Customer = lazy(() => import('@/pages/Customer'));
-const Invoice = lazy(() => import('@/pages/Invoice'));
-const InvoiceCreate = lazy(() => import('@/pages/Invoice/InvoiceCreate'));
-
-const InvoiceRead = lazy(() => import('@/pages/Invoice/InvoiceRead'));
-const InvoiceUpdate = lazy(() => import('@/pages/Invoice/InvoiceUpdate'));
-const InvoiceRecordPayment = lazy(() => import('@/pages/Invoice/InvoiceRecordPayment'));
-
-const Payment = lazy(() => import('@/pages/Payment/index'));
-const PaymentRead = lazy(() => import('@/pages/Payment/PaymentRead'));
-const PaymentUpdate = lazy(() => import('@/pages/Payment/PaymentUpdate'));
-
-const Settings = lazy(() => import('@/pages/Settings/Settings'));
-
-
 const Profile = lazy(() => import('@/pages/Profile'));
-
 const About = lazy(() => import('@/pages/About'));
+const Settings = lazy(() => import('@/pages/Settings/Settings'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+
+// TecMotiv ERP Modules
+const Employees = lazy(() => import('@/pages/Employees'));
+const Attendance = lazy(() => import('@/pages/Attendance'));
+const Leave = lazy(() => import('@/pages/Leave'));
+const Tasks = lazy(() => import('@/pages/Tasks'));
+const Projects = lazy(() => import('@/pages/Projects'));
+const Payroll = lazy(() => import('@/pages/Payroll'));
+const Calendar = lazy(() => import('@/pages/Calendar'));
+const Events = lazy(() => import('@/pages/Events'));
+const Recognition = lazy(() => import('@/pages/Recognition'));
+const Bulletin = lazy(() => import('@/pages/Bulletin'));
+const Policies = lazy(() => import('@/pages/Policies'));
+const Admin = lazy(() => import('@/pages/Admin'));
+const Templates = lazy(() => import('@/pages/Templates'));
+const ItAdmin = lazy(() => import('@/pages/ItAdmin'));
+const Documents = lazy(() => import('@/pages/Documents'));
 
 let routes = {
-  expense: [],
   default: [
     {
       path: '/login',
@@ -37,87 +37,153 @@ let routes = {
       element: <Logout />,
     },
     {
-      path: '/about',
-      element: <About />,
-    },
-    {
       path: '/',
-      element: <Invoice />,
+      element: <Dashboard />,
     },
     {
-      path: '/customer',
-      element: <Customer />,
-    },
-
-    {
-      path: '/invoice',
-      element: <Invoice />,
-    },
-    {
-      path: '/invoice/create',
-      element: <InvoiceCreate />,
+      path: '/employees',
+      element: (
+        <RoleGuard moduleKey="employees">
+          <Employees />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/invoice/read/:id',
-      element: <InvoiceRead />,
+      path: '/attendance',
+      element: (
+        <RoleGuard moduleKey="attendance">
+          <Attendance />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/invoice/update/:id',
-      element: <InvoiceUpdate />,
+      path: '/leave',
+      element: (
+        <RoleGuard moduleKey="leave">
+          <Leave />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/invoice/pay/:id',
-      element: <InvoiceRecordPayment />,
+      path: '/tasks',
+      element: (
+        <RoleGuard moduleKey="tasks">
+          <Tasks />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/quote',
-      element: <Quote />,
+      path: '/projects',
+      element: (
+        <RoleGuard moduleKey="projects">
+          <Projects />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/quote/create',
-      element: <QuoteCreate />,
+      path: '/payroll',
+      element: (
+        <RoleGuard moduleKey="payroll">
+          <Payroll />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/quote/read/:id',
-      element: <QuoteRead />,
+      path: '/documents',
+      element: (
+        <RoleGuard moduleKey="documents">
+          <Documents />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/quote/update/:id',
-      element: <QuoteUpdate />,
+      path: '/calendar',
+      element: (
+        <RoleGuard moduleKey="calendar">
+          <Calendar />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/payment',
-      element: <Payment />,
+      path: '/events',
+      element: (
+        <RoleGuard moduleKey="events">
+          <Events />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/payment/read/:id',
-      element: <PaymentRead />,
+      key: 'recognition',
+      path: '/recognition',
+      element: (
+        <RoleGuard moduleKey="recognition">
+          <Recognition />
+        </RoleGuard>
+      ),
     },
     {
-      path: '/payment/update/:id',
-      element: <PaymentUpdate />,
+      path: '/bulletin',
+      element: (
+        <RoleGuard moduleKey="bulletin">
+          <Bulletin />
+        </RoleGuard>
+      ),
     },
-
+    {
+      path: '/policies',
+      element: (
+        <RoleGuard moduleKey="policies">
+          <Policies />
+        </RoleGuard>
+      ),
+    },
+    {
+      path: '/admin',
+      element: (
+        <RoleGuard moduleKey="admin">
+          <Admin />
+        </RoleGuard>
+      ),
+    },
+    {
+      path: '/templates',
+      element: (
+        <RoleGuard moduleKey="templates">
+          <Templates />
+        </RoleGuard>
+      ),
+    },
+    {
+      path: '/it-admin',
+      element: (
+        <RoleGuard moduleKey="digitalservice">
+          <ItAdmin />
+        </RoleGuard>
+      ),
+    },
     {
       path: '/settings',
-      element: <Settings />,
+      element: (
+        <RoleGuard moduleKey="settings">
+          <Settings />
+        </RoleGuard>
+      ),
     },
     {
       path: '/settings/edit/:settingsKey',
-      element: <Settings />,
+      element: (
+        <RoleGuard moduleKey="settings">
+          <Settings />
+        </RoleGuard>
+      ),
     },
-    {
-      path: '/payment/mode',
-      element: <PaymentMode />,
-    },
-    {
-      path: '/taxes',
-      element: <Taxes />,
-    },
-
     {
       path: '/profile',
       element: <Profile />,
+    },
+    {
+      path: '/about',
+      element: <About />,
     },
     {
       path: '*',

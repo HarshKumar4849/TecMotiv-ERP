@@ -22,33 +22,29 @@ import useResponsive from '@/hooks/useResponsive';
 
 import storePersist from '@/redux/storePersist';
 
+import { selectCurrentAdmin } from '@/redux/auth/selectors';
+import { normalizeRole, ROLES } from '@/utils/rbac';
+
 export default function ErpCrmApp() {
   const { Content } = Layout;
-
-  // const { state: stateApp, appContextAction } = useAppContext();
-  // // const { app } = appContextAction;
-  // const { isNavMenuClose, currentApp } = stateApp;
-
   const { isMobile } = useResponsive();
-
   const dispatch = useDispatch();
 
-  useLayoutEffect(() => {
-    dispatch(settingsAction.list({ entity: 'setting' }));
-  }, []);
+  const currentAdmin = useSelector(selectCurrentAdmin);
+  const rawRole = currentAdmin?.role || 'EMPLOYEE';
+  const role = normalizeRole(rawRole);
+  const canFetchSettings = role === ROLES.ADMIN;
 
-  // const appSettings = useSelector(selectAppSettings);
+  useLayoutEffect(() => {
+    if (canFetchSettings) {
+      dispatch(settingsAction.list({ entity: 'setting' }));
+    }
+  }, [canFetchSettings]);
 
   const { isSuccess: settingIsloaded } = useSelector(selectSettings);
+  const isReady = canFetchSettings ? settingIsloaded : true;
 
-  // useEffect(() => {
-  //   const { loadDefaultLang } = storePersist.get('firstVisit');
-  //   if (appSettings.idurar_app_language && !loadDefaultLang) {
-  //     window.localStorage.setItem('firstVisit', JSON.stringify({ loadDefaultLang: true }));
-  //   }
-  // }, [appSettings]);
-
-  if (settingIsloaded)
+  if (isReady)
     return (
       <Layout hasSider>
         <Navigation />

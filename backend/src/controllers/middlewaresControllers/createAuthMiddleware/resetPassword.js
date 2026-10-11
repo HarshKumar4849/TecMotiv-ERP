@@ -1,48 +1,23 @@
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Joi = require('joi');
 const mongoose = require('mongoose');
-
 const shortid = require('shortid');
+
+const crypto = require('node:crypto');
 
 const resetPassword = async (req, res, { userModel }) => {
   const UserPassword = mongoose.model(userModel + 'Password');
   const User = mongoose.model(userModel);
   const { password, userId, resetToken } = req.body;
 
-  const databasePassword = await UserPassword.findOne({ user: userId, removed: false });
-  const user = await User.findOne({ _id: userId, removed: false }).exec();
-
-  if (!user.enabled)
-    return res.status(409).json({
-      success: false,
-      result: null,
-      message: 'Your account is disabled, contact your account adminstrator',
-    });
-
-  if (!databasePassword || !user)
-    return res.status(404).json({
-      success: false,
-      result: null,
-      message: 'No account with this email has been registered.',
-    });
-
-  const isMatch = resetToken === databasePassword.resetToken;
-  if (!isMatch || databasePassword.resetToken === undefined || databasePassword.resetToken === null)
-    return res.status(403).json({
-      success: false,
-      result: null,
-      message: 'Invalid reset token',
-    });
-
-  // validate
+  // Validate before any account or token lookup to avoid leaking account state.
   const objectSchema = Joi.object({
-    password: Joi.string().required(),
-    userId: Joi.string().required(),
-    resetToken: Joi.string().required(),
+    password: Joi.string().min(12).max(128).required(),
+    userId: Joi.string().hex().length(24).required(),
+    resetToken: Joi.string().hex().length(64).required(),
   });
 
-  const { error, value } = objectSchema.validate({ password, userId, resetToken });
+  const { error } = objectSchema.validate({ password, userId, resetToken });
   if (error) {
     return res.status(409).json({
       success: false,
@@ -53,61 +28,32 @@ const resetPassword = async (req, res, { userModel }) => {
     });
   }
 
+  const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const user = await User.findOne({ _id: userId, removed: false, enabled: true }).exec();
+  const databasePassword = await UserPassword.findOne({
+    user: userId,
+    removed: false,
+    resetToken: tokenHash,
+    resetTokenExpires: { $gt: new Date() },
+  }).exec();
+  if (!user || !databasePassword)
+    return res.status(400).json({ success: false, result: null, message: 'Reset link is invalid or expired.' });
+
   const salt = shortid.generate();
   const hashedPassword = bcrypt.hashSync(salt + password);
-  const emailToken = shortid.generate();
-
-  const token = jwt.sign(
+  const consumed = await UserPassword.findOneAndUpdate(
+    { _id: databasePassword._id, resetToken: tokenHash, resetTokenExpires: { $gt: new Date() } },
     {
-      id: userId,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-
-  await UserPassword.findOneAndUpdate(
-    { user: userId },
-    {
-      $push: { loggedSessions: token },
-      password: hashedPassword,
-      salt: salt,
-      emailToken: emailToken,
-      resetToken: shortid.generate(),
-      emailVerified: true,
+      $set: { password: hashedPassword, salt, resetToken: null, resetTokenExpires: null, loggedSessions: [] },
     },
     {
       new: true,
     }
   ).exec();
+  if (!consumed)
+    return res.status(400).json({ success: false, result: null, message: 'Reset link is invalid or expired.' });
 
-  if (
-    resetToken === databasePassword.resetToken &&
-    databasePassword.resetToken !== undefined &&
-    databasePassword.resetToken !== null
-  )
-    //  .cookie(`token_${user.cloud}`, token, {
-    //       maxAge: 24 * 60 * 60 * 1000,
-    //       sameSite: 'None',
-    //       httpOnly: true,
-    //       secure: true,
-    //       domain: req.hostname,
-    //       path: '/',
-    //       Partitioned: true,
-    //     })
-    return res.status(200).json({
-      success: true,
-      result: {
-        _id: user._id,
-        name: user.name,
-        surname: user.surname,
-        role: user.role,
-        email: user.email,
-        photo: user.photo,
-        token: token,
-        maxAge: req.body.remember ? 365 : null,
-      },
-      message: 'Successfully resetPassword user',
-    });
+  return res.status(200).json({ success: true, result: null, message: 'Password updated. Please log in.' });
 };
 
 module.exports = resetPassword;

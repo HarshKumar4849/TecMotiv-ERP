@@ -1,25 +1,23 @@
+const { buildScopeFilter } = require('./scopeFilter');
+
 const search = async (Model, req, res) => {
-  // console.log(req.query.fields)
-  // if (req.query.q === undefined || req.query.q.trim() === '') {
-  //   return res
-  //     .status(202)
-  //     .json({
-  //       success: false,
-  //       result: [],
-  //       message: 'No document found by this request',
-  //     })
-  //     .end();
-  // }
+  const escapeRegex = (text) => (typeof text === 'string' ? text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '');
   const fieldsArray = req.query.fields ? req.query.fields.split(',') : ['name'];
 
   const fields = { $or: [] };
+  const sanitizedQuery = escapeRegex(req.query.q || '');
 
   for (const field of fieldsArray) {
-    fields.$or.push({ [field]: { $regex: new RegExp(req.query.q, 'i') } });
+    fields.$or.push({ [field]: { $regex: new RegExp(sanitizedQuery, 'i') } });
   }
-  // console.log(fields)
+
+  // Enforce the RBAC access scope (ownership / department constraints
+  // set by rbacMiddleware) so search never leaks records the caller is
+  // not allowed to see.
+  const scopeCondition = buildScopeFilter(Model, req);
 
   let results = await Model.find({
+    ...scopeCondition,
     ...fields,
   })
 

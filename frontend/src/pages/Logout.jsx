@@ -9,6 +9,7 @@ import PageLoader from '@/components/PageLoader';
 const Logout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   function asyncLogout() {
     dispatch(logoutAction());
   }
@@ -20,9 +21,13 @@ const Logout = () => {
 
   useEffect(() => {
     asyncLogout();
+    try {
+      window.localStorage.removeItem('auth');
+    } catch (e) {}
     navigate('/login');
   }, []);
 
   return <PageLoader />;
 };
+
 export default Logout;

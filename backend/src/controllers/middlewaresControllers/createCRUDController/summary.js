@@ -1,31 +1,35 @@
+const { buildScopeFilter } = require('./scopeFilter');
+
 const summary = async (Model, req, res) => {
-  //  Query the database for a list of all results
-  const countPromise = Model.countDocuments({
+  // Enforce the RBAC access scope (ownership / department constraints
+  // set by rbacMiddleware) so summary counts never leak organisation
+  // wide metrics the caller is not allowed to see.
+  const scopeCondition = buildScopeFilter(Model, req);
+
+  // Query the database for a list of all results
+  const countAllDocs = await Model.countDocuments({
     removed: false,
+    ...scopeCondition,
   });
 
-  const resultsPromise = await Model.countDocuments({
-    removed: false,
-  })
-    .where(req.query.filter)
-    .equals(req.query.equal)
-    .exec();
-  // Resolving both promises
-  const [countFilter, countAllDocs] = await Promise.all([resultsPromise, countPromise]);
-
-  if (countAllDocs.length > 0) {
-    return res.status(200).json({
-      success: true,
-      result: { countFilter, countAllDocs },
-      message: 'Successfully count all documents',
-    });
+  let countFilter = 0;
+  if (req.query.filter && req.query.equal !== undefined) {
+    countFilter = await Model.countDocuments({
+      removed: false,
+      ...scopeCondition,
+    })
+      .where(req.query.filter)
+      .equals(req.query.equal)
+      .exec();
   } else {
-    return res.status(203).json({
-      success: false,
-      result: [],
-      message: 'Collection is Empty',
-    });
+    countFilter = countAllDocs;
   }
+
+  return res.status(200).json({
+    success: true,
+    result: { countFilter, countAllDocs },
+    message: 'Successfully counted all documents',
+  });
 };
 
 module.exports = summary;

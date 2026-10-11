@@ -1,6 +1,13 @@
+const { buildScopeFilter } = require('./scopeFilter');
+
 const listAll = async (Model, req, res) => {
   const sort = req.query.sort || 'desc';
   const enabled = req.query.enabled || undefined;
+
+  // Enforce the RBAC access scope (ownership / department constraints
+  // set by rbacMiddleware) so listAll never leaks records the caller
+  // is not allowed to see.
+  const scopeCondition = buildScopeFilter(Model, req);
 
   //  Query the database for a list of all results
 
@@ -8,6 +15,7 @@ const listAll = async (Model, req, res) => {
   if (enabled === undefined) {
     result = await Model.find({
       removed: false,
+      ...scopeCondition,
     })
       .sort({ created: sort })
       .populate()
@@ -16,6 +24,7 @@ const listAll = async (Model, req, res) => {
     result = await Model.find({
       removed: false,
       enabled: enabled,
+      ...scopeCondition,
     })
       .sort({ created: sort })
       .populate()

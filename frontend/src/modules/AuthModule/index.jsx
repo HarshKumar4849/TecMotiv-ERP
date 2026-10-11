@@ -24,13 +24,13 @@ const AuthModule = ({ authContent, AUTH_TITLE, isForRegistre = false }) => {
         <Col xs={{ span: 24 }} sm={{ span: 24 }} md={{ span: 0 }} span={0}>
           <img
             src={logo}
-            alt="Logo"
+            alt="TecMotiv Solutions"
             style={{
               margin: '0px auto 20px',
               display: 'block',
+              maxWidth: '220px',
+              height: 'auto',
             }}
-            height={63}
-            width={220}
           />
           <div className="space10" />
         </Col>

@@ -11,9 +11,6 @@ const setup = async (req, res) => {
   const AdminPassword = mongoose.model('AdminPassword');
   const Setting = mongoose.model('Setting');
 
-  const PaymentMode = mongoose.model('PaymentMode');
-  const Taxes = mongoose.model('Taxes');
-
   const newAdminPassword = new AdminPassword();
 
   const { name, email, password, language, timezone, country, config = {} } = req.body;
@@ -81,20 +78,10 @@ const setup = async (req, res) => {
 
   await Setting.insertMany(settingData);
 
-  await Taxes.insertMany([{ taxName: 'Tax 0%', taxValue: '0', isDefault: true }]);
-
-  await PaymentMode.insertMany([
-    {
-      name: 'Default Payment',
-      description: 'Default Payment Mode (Cash , Wire Transfer)',
-      isDefault: true,
-    },
-  ]);
-
   return res.status(200).json({
     success: true,
     result: {},
-    message: 'Successfully IDURAR App Setup',
+    message: 'Successfully TecMotiv App Setup',
   });
 };
 

@@ -51,6 +51,13 @@ export default function LoginForm() {
           {translate('Forgot password')}
         </a>
       </Form.Item>
+
+      <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
+        <span style={{ color: '#767676', fontSize: 13 }}>New employee? </span>
+        <a href="/register" style={{ color: '#1677ff', fontWeight: 600, fontSize: 13 }}>
+          Register as Employee
+        </a>
+      </div>
     </div>
   );
 }

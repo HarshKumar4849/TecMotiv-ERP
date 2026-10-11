@@ -4,9 +4,9 @@ const mongoose = require('mongoose');
 
 const checkAndCorrectURL = require('./checkAndCorrectURL');
 const sendMail = require('./sendMail');
-const shortid = require('shortid');
-const { loadSettings } = require('@/middlewares/settings');
-
+const crypto = require('node:crypto');
+const { promisify } = require('node:util');
+const randomBytes = promisify(crypto.randomBytes);
 const { useAppSettings } = require('@/settings');
 
 const forgetPassword = async (req, res, { userModel }) => {
@@ -21,7 +21,7 @@ const forgetPassword = async (req, res, { userModel }) => {
       .required(),
   });
 
-  const { error, value } = objectSchema.validate({ email });
+  const { error } = objectSchema.validate({ email });
   if (error) {
     return res.status(409).json({
       success: false,
@@ -32,47 +32,44 @@ const forgetPassword = async (req, res, { userModel }) => {
     });
   }
 
-  const user = await User.findOne({ email: email, removed: false });
-  const databasePassword = await UserPassword.findOne({ user: user._id, removed: false });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail, removed: false });
+  if (user?.enabled) {
+    const rawToken = (await randomBytes(32)).toString('hex');
+    const resetToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const updated = await UserPassword.findOneAndUpdate(
+      { user: user._id, removed: false },
+      { $set: { resetToken, resetTokenExpires: expiresAt } },
+      { new: true }
+    ).exec();
+    if (updated) {
+      const settings = useAppSettings();
+      const idurar_app_email = settings['idurar_app_email'];
+      const idurar_base_url = settings['idurar_base_url'];
+      const configuredClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL)?.split(',')[0].trim();
+      const url = checkAndCorrectURL(configuredClientUrl || idurar_base_url || 'http://localhost:3000');
+      const link = url + '/resetpassword/' + user._id + '/' + rawToken;
 
-  // console.log(user);
-  if (!user)
-    return res.status(404).json({
-      success: false,
-      result: null,
-      message: 'No account with this email has been registered.',
-    });
-
-  const resetToken = shortid.generate();
-  await UserPassword.findOneAndUpdate(
-    { user: user._id },
-    { resetToken },
-    {
-      new: true,
+      try {
+        await sendMail({
+          email: normalizedEmail,
+          name: user.name,
+          link,
+          subject: 'Reset your password | TecMotiv ERP',
+          idurar_app_email,
+          type: 'passwordVerfication',
+        });
+      } catch {
+        // Keep the public response identical when the delivery provider fails.
+      }
     }
-  ).exec();
-
-  const settings = useAppSettings();
-  const idurar_app_email = settings['idurar_app_email'];
-  const idurar_base_url = settings['idurar_base_url'];
-
-  const url = checkAndCorrectURL(idurar_base_url);
-
-  const link = url + '/resetpassword/' + user._id + '/' + resetToken;
-
-  await sendMail({
-    email,
-    name: user.name,
-    link,
-    subject: 'Reset your password | idurar',
-    idurar_app_email,
-    type: 'passwordVerfication',
-  });
+  }
 
   return res.status(200).json({
     success: true,
     result: null,
-    message: 'Check your email inbox , to reset your password',
+    message: 'If an account exists for that email, you will receive password reset instructions shortly.',
   });
 };
 

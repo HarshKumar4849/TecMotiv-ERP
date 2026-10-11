@@ -448,8 +448,26 @@ const lang = {
   create_only: 'Create Only',
   enter_code: 'Enter Code',
   offers: 'Offers',
-  proforma_invoices: 'quote',
   search: 'search',
+  // TecMotiv ERP Navigation & Modules
+  Dashboard: 'Dashboard',
+  Employees: 'Employees',
+  Attendance: 'Attendance',
+  Leave: 'Leave',
+  Tasks: 'Tasks',
+  Projects: 'Projects',
+  Payroll: 'Payroll',
+  Calendar: 'Calendar',
+  'Events & Celebrations': 'Events & Celebrations',
+  Recognition: 'Recognition',
+  'Bulletin / News': 'Bulletin / News',
+  Policies: 'Policies',
+  Admin: 'Admin',
+  'Admin Panel': 'Admin Panel',
+  'IT & Digital Admin': 'IT & Digital Admin',
+  Templates: 'Templates',
+  Settings: 'Settings',
+  'New Entry': 'New Entry',
 };
 
 export default lang;
