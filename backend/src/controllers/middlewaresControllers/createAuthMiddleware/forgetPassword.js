@@ -48,7 +48,8 @@ const forgetPassword = async (req, res, { userModel }) => {
       const idurar_app_email = settings['idurar_app_email'];
       const idurar_base_url = settings['idurar_base_url'];
       const configuredClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL)?.split(',')[0].trim();
-      const url = checkAndCorrectURL(configuredClientUrl || idurar_base_url || 'http://localhost:3000');
+      const originFromHeader = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+      const url = checkAndCorrectURL(configuredClientUrl || originFromHeader || idurar_base_url || 'http://localhost:3000');
       const link = url + '/resetpassword/' + user._id + '/' + rawToken;
 
       try {
