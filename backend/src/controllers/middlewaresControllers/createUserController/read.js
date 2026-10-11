@@ -25,6 +25,9 @@ const read = async (userModel, req, res) => {
       surname: tmpResult.surname,
       photo: tmpResult.photo,
       role: tmpResult.role,
+      department: tmpResult.department,
+      designation: tmpResult.designation,
+      employeeId: tmpResult.employeeId,
     };
 
     return res.status(200).json({

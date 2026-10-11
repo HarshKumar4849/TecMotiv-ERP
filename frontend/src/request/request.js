@@ -161,7 +161,24 @@ const request = {
       }
       query = query.slice(0, -1);
 
-      const response = await axios.get(entity + '/list' + query);
+      let url = '';
+      if (
+        entity.endsWith('/list') ||
+        entity.includes('/list?') ||
+        entity.includes('/feed') ||
+        entity.includes('/dashboard') ||
+        entity.includes('/celebrations') ||
+        entity.includes('/events') ||
+        entity.includes('/reminders') ||
+        entity.includes('/today') ||
+        entity.includes('/monthly')
+      ) {
+        url = query.length > 1 ? `${entity}${entity.includes('?') ? '&' + query.slice(1) : query}` : entity;
+      } else {
+        url = entity + '/list' + query;
+      }
+
+      const response = await axios.get(url);
 
       successHandler(response, {
         notifyOnSuccess: false,

@@ -29,8 +29,32 @@ const adminSchema = new Schema({
   },
   role: {
     type: String,
-    default: 'owner',
-    enum: ['owner'],
+    default: 'EMPLOYEE',
+    enum: [
+      'MANAGEMENT',
+      'HR',
+      'FINANCE',
+      'ADMIN',
+      'DEPARTMENT_HEAD',
+      'EMPLOYEE',
+      'owner',
+      'super_admin',
+    ],
+  },
+  department: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  designation: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  employeeId: {
+    type: String,
+    trim: true,
+    default: null,
   },
 });
 

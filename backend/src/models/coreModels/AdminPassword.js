@@ -18,7 +18,16 @@ const AdminPasswordSchema = new Schema({
     required: true,
   },
   emailToken: String,
+  emailOtp: {
+    type: String,
+    default: null,
+  },
+  emailOtpExpires: {
+    type: Date,
+    default: null,
+  },
   resetToken: String,
+  resetTokenExpires: Date,
   emailVerified: {
     type: Boolean,
     default: false,

@@ -2,6 +2,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const authUser = async (req, res, { user, databasePassword, password, UserPasswordModel }) => {
+  if (!databasePassword || !databasePassword.salt || !databasePassword.password) {
+    return res.status(403).json({
+      success: false,
+      result: null,
+      message: 'Invalid credentials.',
+    });
+  }
   const isMatch = await bcrypt.compare(databasePassword.salt + password, databasePassword.password);
 
   if (!isMatch)
@@ -44,6 +51,9 @@ const authUser = async (req, res, { user, databasePassword, password, UserPasswo
         name: user.name,
         surname: user.surname,
         role: user.role,
+        department: user.department,
+        designation: user.designation,
+        employeeId: user.employeeId,
         email: user.email,
         photo: user.photo,
         token: token,

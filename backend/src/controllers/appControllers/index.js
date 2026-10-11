@@ -27,8 +27,11 @@ const appControllers = () => {
   });
 
   routesList.forEach(({ modelName, controllerName }) => {
-    if (!hasCustomControllers.includes(controllerName)) {
-      controllers[controllerName] = createCRUDController(modelName);
+    const crudMethods = createCRUDController(modelName);
+    if (controllers[controllerName]) {
+      controllers[controllerName] = { ...crudMethods, ...controllers[controllerName] };
+    } else {
+      controllers[controllerName] = crudMethods;
     }
   });
 

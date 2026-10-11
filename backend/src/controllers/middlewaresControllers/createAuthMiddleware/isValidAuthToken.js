@@ -42,6 +42,14 @@ const isValidAuthToken = async (req, res, next, { userModel, jwtSecret = 'JWT_SE
         jwtExpired: true,
       });
 
+    if (user.enabled === false)
+      return res.status(401).json({
+        success: false,
+        result: null,
+        message: 'Account is deactivated, authorization denied.',
+        jwtExpired: true,
+      });
+
     const { loggedSessions } = userPassword;
 
     if (!loggedSessions.includes(token))
@@ -54,14 +62,20 @@ const isValidAuthToken = async (req, res, next, { userModel, jwtSecret = 'JWT_SE
     else {
       const reqUserName = userModel.toLowerCase();
       req[reqUserName] = user;
+      req.user = user;
       next();
     }
   } catch (error) {
-    return res.status(500).json({
+    const isAuthError =
+      error.name === 'TokenExpiredError' ||
+      error.name === 'JsonWebTokenError' ||
+      error.name === 'NotBeforeError';
+
+    return res.status(401).json({
       success: false,
       result: null,
-      message: error.message,
-      error: error,
+      message: isAuthError ? 'Authentication token invalid or expired. Please login again.' : 'Authentication error.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       controller: 'isValidAuthToken',
       jwtExpired: true,
     });

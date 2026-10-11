@@ -23,6 +23,9 @@ export default function ForgetPasswordForm() {
         prefix={<MailOutlined className="site-form-item-icon" />}
         type="email"
         placeholder={translate('email')}
+        // This field has no visible Form.Item label, so without an explicit
+        // accessible name it is announced as an unlabelled textbox.
+        aria-label={translate('email')}
         size="large"
       />
     </Form.Item>

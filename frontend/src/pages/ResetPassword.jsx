@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -17,13 +15,13 @@ import AuthModule from '@/modules/AuthModule';
 
 const ResetPassword = () => {
   const translate = useLanguage();
-  const { isLoading, isSuccess } = useSelector(selectAuth);
+  const { isLoading } = useSelector(selectAuth);
   const navigate = useNavigate();
   const { userId, resetToken } = useParams();
 
   const dispatch = useDispatch();
-  const onFinish = (values) => {
-    dispatch(
+  const onFinish = async (values) => {
+    const result = await dispatch(
       resetPassword({
         resetPasswordData: {
           password: values.password,
@@ -32,11 +30,8 @@ const ResetPassword = () => {
         },
       })
     );
+    if (result?.success) navigate('/login');
   };
-
-  useEffect(() => {
-    if (isSuccess) navigate('/');
-  }, [isSuccess]);
 
   const FormContainer = () => {
     return (

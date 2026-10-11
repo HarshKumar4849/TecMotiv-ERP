@@ -22,17 +22,15 @@ export default function SideContent() {
       <div style={{ width: '100%' }}>
         <img
           src={logo}
-          alt="IDURAR ERP CRM"
-          style={{ margin: '0 0 40px', display: 'block' }}
-          height={63}
-          width={220}
+          alt="TecMotiv Solutions"
+          style={{ margin: '0 0 32px', display: 'block', maxWidth: '240px', height: 'auto' }}
         />
 
-        <Title level={1} style={{ fontSize: 28 }}>
-          Free Open Source ERP / CRM
+        <Title level={1} style={{ fontSize: 28, color: '#002244' }}>
+          TecMotiv Solutions
         </Title>
-        <Text>
-          Accounting / Invoicing / Quote App <b /> based on Node.js React.js Ant Design
+        <Text style={{ fontSize: 15, color: '#595959' }}>
+          Enterprise ERP, HR & Operations Management System
         </Text>
 
         <div className="space20"></div>

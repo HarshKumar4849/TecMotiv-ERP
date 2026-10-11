@@ -1,18 +1,22 @@
+const { buildScopeFilter } = require('./scopeFilter');
+
 const paginatedList = async (Model, req, res) => {
-  const page = req.query.page || 1;
-  const limit = parseInt(req.query.items) || 10;
-  const skip = page * limit - limit;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.items, 10) || 10;
+  const skip = (page - 1) * limit;
 
   const { sortBy = 'enabled', sortValue = -1, filter, equal } = req.query;
 
   const fieldsArray = req.query.fields ? req.query.fields.split(',') : [];
 
+  const escapeRegex = (text) => (typeof text === 'string' ? text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '');
   let fields;
 
   fields = fieldsArray.length === 0 ? {} : { $or: [] };
+  const sanitizedQuery = escapeRegex(req.query.q || '');
 
   for (const field of fieldsArray) {
-    fields.$or.push({ [field]: { $regex: new RegExp(req.query.q, 'i') } });
+    fields.$or.push({ [field]: { $regex: new RegExp(sanitizedQuery, 'i') } });
   }
 
   // Build filter condition safely: reject MongoDB operators in values
@@ -28,9 +32,15 @@ const paginatedList = async (Model, req, res) => {
     filterCondition = { [filter]: equal };
   }
 
+  // Enforce the RBAC access scope (ownership / department constraints
+  // set by rbacMiddleware) so list operations never leak records the
+  // caller is not allowed to see.
+  const scopeCondition = buildScopeFilter(Model, req);
+
   //  Query the database for a list of all results
   const resultsPromise = Model.find({
     removed: false,
+    ...scopeCondition,
     ...filterCondition,
     ...fields,
   })
@@ -43,6 +53,7 @@ const paginatedList = async (Model, req, res) => {
   // Counting the total documents
   const countPromise = Model.countDocuments({
     removed: false,
+    ...scopeCondition,
     ...filterCondition,
     ...fields,
   });

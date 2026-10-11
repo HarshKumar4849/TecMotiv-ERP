@@ -9,22 +9,23 @@
 exports.catchErrors = (fn) => {
   return function (req, res, next) {
     return fn(req, res, next).catch((error) => {
+      const isDev = process.env.NODE_ENV === 'development';
       if (error.name == 'ValidationError') {
         return res.status(400).json({
           success: false,
           result: null,
-          message: 'Required fields are not supplied',
+          message: error.message || 'Required fields are not supplied',
           controller: fn.name,
-          error: error,
+          error: isDev ? error : undefined,
         });
       } else {
         // Server Error
-        return res.status(500).json({
+        return res.status(error.status || 500).json({
           success: false,
           result: null,
-          message: error.message,
+          message: error.message || 'Internal Server Error',
           controller: fn.name,
-          error: error,
+          error: isDev ? error : undefined,
         });
       }
     });
@@ -66,12 +67,12 @@ exports.developmentErrors = (error, req, res, next) => {
 /*
   Production Error Handler
 
-  No stacktraces are leaked to admin
+  No stacktraces are leaked to admin or client
 */
 exports.productionErrors = (error, req, res, next) => {
-  return res.status(500).json({
+  return res.status(error.status || 500).json({
     success: false,
-    message: error.message,
-    error: error,
+    message: error.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? error : undefined,
   });
 };

@@ -1,18 +1,27 @@
+const { buildScopeFilter } = require('./scopeFilter');
+
 const filter = async (Model, req, res) => {
   if (req.query.filter === undefined || req.query.equal === undefined) {
-    return res.status(403).json({
+    return res.status(400).json({
       success: false,
       result: null,
       message: 'filter not provided correctly',
     });
   }
+
+  // Enforce the RBAC access scope (ownership / department constraints
+  // set by rbacMiddleware) so filter never leaks records the caller is
+  // not allowed to see.
+  const scopeCondition = buildScopeFilter(Model, req);
+
   const result = await Model.find({
     removed: false,
+    ...scopeCondition,
   })
     .where(req.query.filter)
     .equals(req.query.equal)
     .exec();
-  if (!result) {
+  if (!result || result.length === 0) {
     return res.status(404).json({
       success: false,
       result: null,
