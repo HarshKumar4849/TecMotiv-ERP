@@ -7,7 +7,7 @@ const sendMail = require('./sendMail');
 const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const randomBytes = promisify(crypto.randomBytes);
-const { useAppSettings } = require('@/settings');
+const { useAppSettings } = require('../../../settings');
 
 const forgetPassword = async (req, res, { userModel }) => {
   const UserPassword = mongoose.model(userModel + 'Password');
@@ -60,7 +60,8 @@ const forgetPassword = async (req, res, { userModel }) => {
           idurar_app_email,
           type: 'passwordVerfication',
         });
-      } catch {
+      } catch (mailErr) {
+        console.error('Password reset email failed to send:', mailErr.message);
         // Keep the public response identical when the delivery provider fails.
       }
     }

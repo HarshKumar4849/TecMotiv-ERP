@@ -1,6 +1,5 @@
-const { passwordVerfication } = require('@/emailTemplate/emailVerfication');
-
-const mailHandler = require('@/handlers/mail');
+const { passwordVerfication } = require('../../../emailTemplate/emailVerfication');
+const mailHandler = require('../../../handlers/mail');
 
 const sendMail = async ({
   email,
