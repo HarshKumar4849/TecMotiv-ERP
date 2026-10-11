@@ -18,14 +18,33 @@ const fileUpload = require('express-fileupload');
 // create our Express app
 const app = express();
 
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
-  : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8888'];
+const defaultLocalOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:5173',
+  'http://localhost:8888',
+];
+
+const configuredOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/+$/, ''))
+  : [];
+
+const allowedOrigins = [...new Set([...configuredOrigins, ...defaultLocalOrigins])];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/+$/, '');
+
+      // Allow localhost and 127.0.0.1 on any port for local development & testing
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+
+      if (isLocalhost || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
         callback(new Error('Blocked by CORS policy'));
