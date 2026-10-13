@@ -1,15 +1,15 @@
 const express = require('express');
 
-const { catchErrors } = require('@/handlers/errorHandlers');
+const { catchErrors } = require('../../handlers/errorHandlers');
 
 const rbacMiddleware = require('../../middlewares/rbacMiddleware');
 
 const router = express.Router();
 
-const adminController = require('@/controllers/coreControllers/adminController');
-const settingController = require('@/controllers/coreControllers/settingController');
+const adminController = require('../../controllers/coreControllers/adminController');
+const settingController = require('../../controllers/coreControllers/settingController');
 
-const { singleStorageUpload } = require('@/middlewares/uploadMiddleware');
+const { singleStorageUpload } = require('../../middlewares/uploadMiddleware');
 
 // //_______________________________ Admin management_______________________________
 

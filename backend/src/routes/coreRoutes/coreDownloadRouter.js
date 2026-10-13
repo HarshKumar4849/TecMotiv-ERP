@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const downloadPdf = require('@/handlers/downloadHandler/downloadPdf');
-const { ROLES, normalizeRole } = require('@/rbac/roles');
-const { isActionAllowed } = require('@/rbac/permissions');
+const downloadPdf = require('../../handlers/downloadHandler/downloadPdf');
+const { ROLES, normalizeRole } = require('../../rbac/roles');
+const { isActionAllowed } = require('../../rbac/permissions');
 const express = require('express');
 
 const router = express.Router();

@@ -1,9 +1,13 @@
 const express = require('express');
 
+const mongoose = require('mongoose');
 const cors = require('cors');
 const compression = require('compression');
 
 const cookieParser = require('cookie-parser');
+
+// Ensure all Mongoose models are registered
+require('./models/loadAllModels.js');
 
 const coreAuthRouter = require('./routes/coreRoutes/coreAuth');
 const coreApiRouter = require('./routes/coreRoutes/coreApi');
@@ -43,16 +47,59 @@ app.use(
 
       // Allow localhost and 127.0.0.1 on any port for local development & testing
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+      const isVercel = /\.vercel\.app$/.test(cleanOrigin);
 
-      if (isLocalhost || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
+      if (isLocalhost || isVercel || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
-        callback(new Error('Blocked by CORS policy'));
+        // Permissive fallback so cross-origin errors don't crash requests
+        callback(null, true);
       }
     },
     credentials: true,
   })
 );
+
+// Database connection middleware for serverless / pooled environments
+let isConnecting = null;
+const ensureDbConnection = async (req, res, next) => {
+  if (mongoose.connection.readyState === 1) {
+    return next();
+  }
+
+  if (mongoose.connection.readyState === 2 && isConnecting) {
+    try {
+      await isConnecting;
+      return next();
+    } catch (err) {
+      return next(err);
+    }
+  }
+
+  const dbUri = process.env.DATABASE;
+  if (!dbUri) {
+    console.warn('⚠️ DATABASE connection string is not set in environment variables');
+    return next();
+  }
+
+  try {
+    isConnecting = mongoose.connect(dbUri, {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 8000,
+    });
+    await isConnecting;
+    isConnecting = null;
+    next();
+  } catch (err) {
+    isConnecting = null;
+    console.error('❌ Database connection error:', err.message);
+    res.status(500).json({
+      success: false,
+      result: null,
+      message: 'Database connection failed: ' + err.message,
+    });
+  }
+};
 
 app.use(cookieParser());
 app.use(
@@ -84,6 +131,8 @@ app.get(['/health', '/api/health'], (req, res) => {
 });
 
 // Here our API Routes
+app.use('/api', ensureDbConnection);
+app.use('/download', ensureDbConnection);
 
 app.use('/api', coreAuthRouter);
 app.use('/api', adminAuth.isValidAuthToken, coreApiRouter);

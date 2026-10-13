@@ -1,12 +1,12 @@
 {
-  "name": "idurar-erp-crm",
+  "name": "tecmotiv-erp-backend",
   "version": "4.1.0",
   "engines": {
-    "npm": "10.2.4",
-    "node": "20.9.0"
+    "node": "24.x"
   },
   "scripts": {
     "start": "node src/server.js",
+    "postinstall": "node -e \"const fs=require('fs'),path=require('path');const target=path.resolve('src'),link=path.resolve('node_modules/@');if(!fs.existsSync(link)){try{fs.symlinkSync(target,link,'junction')}catch(e){}}\"",
     "dev": "nodemon src/server.js --ignore public/",
     "production": "NODE_ENV=production",
     "setup": "node src/setup/setup.js",
@@ -68,7 +68,7 @@
   "_moduleAliases": {
     "@": "src"
   },
-  "main": "server.js",
+  "main": "index.js",
   "author": "IDURAR",
   "email": "hello@idurarapp.com",
   "license": "Fair-code License",

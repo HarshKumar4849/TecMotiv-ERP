@@ -1,46 +1,78 @@
-const { basename, extname } = require('path');
+const { basename, extname, resolve } = require('path');
 const { globSync } = require('glob');
 
-const appModelsFiles = globSync('./src/models/appModels/**/*.js');
+const modelsBaseDir = resolve(__dirname, '..').replace(/\\/g, '/');
+const appModelsFiles = globSync(`${modelsBaseDir}/appModels/**/*.js`);
 
-const pattern = './src/models/**/*.js';
+const pattern = `${modelsBaseDir}/**/*.js`;
 
-const modelsFiles = globSync(pattern).map((filePath) => {
+const defaultAppModels = [
+  'Announcement',
+  'Asset',
+  'Attendance',
+  'Celebration',
+  'Department',
+  'Designation',
+  'DigitalService',
+  'Document',
+  'Employee',
+  'Event',
+  'GithubActivity',
+  'Leave',
+  'LeaveBalance',
+  'Location',
+  'Notification',
+  'NotificationPreference',
+  'OfficeOperation',
+  'OutlookIntegration',
+  'Policy',
+  'PolicyAcknowledgement',
+  'Project',
+  'Recognition',
+  'Salary',
+  'SalaryAudit',
+  'Task',
+  'Template',
+];
+
+const defaultCoreModels = ['Admin', 'AdminPassword', 'Setting', 'Upload'];
+
+let modelsFiles = globSync(pattern).map((filePath) => {
   const fileNameWithExtension = basename(filePath);
-  const fileNameWithoutExtension = fileNameWithExtension.replace(
-    extname(fileNameWithExtension),
-    ''
-  );
-  return fileNameWithoutExtension;
+  return fileNameWithExtension.replace(extname(fileNameWithExtension), '');
 });
+
+if (!modelsFiles || modelsFiles.length === 0) {
+  modelsFiles = [...defaultCoreModels, ...defaultAppModels];
+}
 
 const constrollersList = [];
 const appModelsList = [];
 const entityList = [];
 const routesList = [];
 
-for (const filePath of appModelsFiles) {
-  const fileNameWithExtension = basename(filePath);
-  const fileNameWithoutExtension = fileNameWithExtension.replace(
-    extname(fileNameWithExtension),
-    ''
-  );
-  const firstChar = fileNameWithoutExtension.charAt(0);
-  const modelName = fileNameWithoutExtension.replace(firstChar, firstChar.toUpperCase());
-  const fileNameLowerCaseFirstChar = fileNameWithoutExtension.replace(
-    firstChar,
-    firstChar.toLowerCase()
-  );
-  const entity = fileNameWithoutExtension.toLowerCase();
+const effectiveAppModelNames =
+  appModelsFiles && appModelsFiles.length > 0
+    ? appModelsFiles.map((filePath) => {
+        const fileNameWithExtension = basename(filePath);
+        return fileNameWithExtension.replace(extname(fileNameWithExtension), '');
+      })
+    : defaultAppModels;
 
-  controllerName = fileNameLowerCaseFirstChar + 'Controller';
+for (const modelName of effectiveAppModelNames) {
+  const firstChar = modelName.charAt(0);
+  const normalizedModelName = modelName.replace(firstChar, firstChar.toUpperCase());
+  const fileNameLowerCaseFirstChar = modelName.replace(firstChar, firstChar.toLowerCase());
+  const entity = modelName.toLowerCase();
+
+  const controllerName = fileNameLowerCaseFirstChar + 'Controller';
   constrollersList.push(controllerName);
-  appModelsList.push(modelName);
+  appModelsList.push(normalizedModelName);
   entityList.push(entity);
 
   const route = {
     entity: entity,
-    modelName: modelName,
+    modelName: normalizedModelName,
     controllerName: controllerName,
   };
   routesList.push(route);

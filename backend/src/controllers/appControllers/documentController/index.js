@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
-const { ROLES, normalizeRole } = require('@/rbac/roles');
+const { ROLES, normalizeRole } = require('../../../rbac/roles');
 
 const documentController = {
   // ==========================================

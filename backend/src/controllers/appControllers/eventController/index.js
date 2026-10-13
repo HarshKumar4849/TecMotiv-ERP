@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 // Ensure models are registered for population
 try {
   if (!mongoose.models.Admin) {
-    try { require('@/models/coreModels/Admin'); } catch (e) { require('../../../models/coreModels/Admin'); }
+    try { require('../../../models/coreModels/Admin'); } catch (e) { require('../../../models/coreModels/Admin'); }
   }
 } catch (e) {}
 
 try {
   if (!mongoose.models.Employee) {
-    try { require('@/models/appModels/Employee'); } catch (e) { require('../../../models/appModels/Employee'); }
+    try { require('../../../models/appModels/Employee'); } catch (e) { require('../../../models/appModels/Employee'); }
   }
 } catch (e) {}
 
@@ -29,7 +29,7 @@ const resolveEmployee = async (user) => {
 // =========================================================================
 const create = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const user = req.user;
 
     const {
@@ -163,7 +163,7 @@ const create = async (req, res) => {
 // =========================================================================
 const read = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -194,7 +194,7 @@ const read = async (req, res) => {
 // =========================================================================
 const update = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -315,7 +315,7 @@ const update = async (req, res) => {
 // =========================================================================
 const deleteEvent = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const { id } = req.params;
 
     const event = await Event.findOne({ _id: id, removed: false });
@@ -341,7 +341,7 @@ const deleteEvent = async (req, res) => {
 // =========================================================================
 const list = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
 
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.items, 10) || 50;
@@ -426,7 +426,7 @@ const list = async (req, res) => {
 // =========================================================================
 const sendInvitation = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const user = req.user;
     const { id } = req.params;
     const { subject, message: inviteMessage } = req.body;
@@ -477,7 +477,7 @@ const sendInvitation = async (req, res) => {
 // =========================================================================
 const addMedia = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const { id } = req.params;
     const { poster, photos, videos } = req.body;
 
@@ -516,7 +516,7 @@ const addMedia = async (req, res) => {
 // =========================================================================
 const submitReport = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const user = req.user;
     const { id } = req.params;
     const { summary, attendanceCount, highlights, outcomes } = req.body;
@@ -557,7 +557,7 @@ const submitReport = async (req, res) => {
 // =========================================================================
 const history = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const now = new Date();
 
     const pastEvents = await Event.find({
@@ -587,7 +587,7 @@ const history = async (req, res) => {
 // =========================================================================
 const summary = async (req, res) => {
   try {
-    const Event = mongoose.models.Event || require('@/models/appModels/Event');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 

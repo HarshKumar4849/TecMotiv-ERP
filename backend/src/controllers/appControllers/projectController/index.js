@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 let ROLES, normalizeRole;
 try {
-  ({ ROLES, normalizeRole } = require('@/rbac/roles'));
+  ({ ROLES, normalizeRole } = require('../../../rbac/roles'));
 } catch (e) {
   ({ ROLES, normalizeRole } = require('../../../rbac/roles'));
 }

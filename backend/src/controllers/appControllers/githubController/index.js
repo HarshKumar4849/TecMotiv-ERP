@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-const { parseRepositoryInput, verifyAndFetchRepository } = require('@/services/githubService');
+const { parseRepositoryInput, verifyAndFetchRepository } = require('../../../services/githubService');
 
 let ROLES, normalizeRole;
 try {
-  ({ ROLES, normalizeRole } = require('@/rbac/roles'));
+  ({ ROLES, normalizeRole } = require('../../../rbac/roles'));
 } catch (e) {
   ({ ROLES, normalizeRole } = require('../../../rbac/roles'));
 }
@@ -254,7 +254,7 @@ const getCommits = async (req, res) => {
       });
     }
 
-    const { fetchCommits } = require('@/services/githubService');
+    const { fetchCommits } = require('../../../services/githubService');
     const commits = await fetchCommits(project.github.repoOwner, project.github.repoName, {
       branch: req.query.branch || project.github.defaultBranch || 'main',
       page: req.query.page || 1,
@@ -301,7 +301,7 @@ const getPullRequests = async (req, res) => {
       });
     }
 
-    const { fetchPullRequests } = require('@/services/githubService');
+    const { fetchPullRequests } = require('../../../services/githubService');
     const pulls = await fetchPullRequests(project.github.repoOwner, project.github.repoName, {
       state: req.query.state || 'all',
       page: req.query.page || 1,
@@ -348,7 +348,7 @@ const getIssues = async (req, res) => {
       });
     }
 
-    const { fetchIssues } = require('@/services/githubService');
+    const { fetchIssues } = require('../../../services/githubService');
     const issues = await fetchIssues(project.github.repoOwner, project.github.repoName, {
       state: req.query.state || 'all',
       page: req.query.page || 1,
@@ -395,7 +395,7 @@ const getBranches = async (req, res) => {
       });
     }
 
-    const { fetchBranches } = require('@/services/githubService');
+    const { fetchBranches } = require('../../../services/githubService');
     const branches = await fetchBranches(project.github.repoOwner, project.github.repoName);
 
     return res.status(200).json({
@@ -436,7 +436,7 @@ const syncRepository = async (req, res) => {
       });
     }
 
-    const { reconcileProjectRepository } = require('@/services/githubService');
+    const { reconcileProjectRepository } = require('../../../services/githubService');
     const syncResult = await reconcileProjectRepository(project);
 
     return res.status(200).json({
@@ -503,7 +503,7 @@ const handleWebhook = async (req, res) => {
       });
     }
 
-    const { verifyWebhookSignature, processWebhookPayload } = require('@/services/githubService');
+    const { verifyWebhookSignature, processWebhookPayload } = require('../../../services/githubService');
 
     // Verify HMAC-SHA256 signature
     const rawBody = req.rawBody || req.body;

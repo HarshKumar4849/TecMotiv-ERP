@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form, Input, Checkbox } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 
 import useLanguage from '@/locale/useLanguage';
 
@@ -47,16 +48,16 @@ export default function LoginForm() {
         <Form.Item name="remember" valuePropName="checked" noStyle>
           <Checkbox>{translate('Remember me')}</Checkbox>
         </Form.Item>
-        <a className="login-form-forgot" href="/forgetpassword" style={{ marginLeft: '0px' }}>
+        <Link className="login-form-forgot" to="/forgetpassword" style={{ marginLeft: '0px' }}>
           {translate('Forgot password')}
-        </a>
+        </Link>
       </Form.Item>
 
       <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
         <span style={{ color: '#767676', fontSize: 13 }}>New employee? </span>
-        <a href="/register" style={{ color: '#1677ff', fontWeight: 600, fontSize: 13 }}>
+        <Link to="/register" style={{ color: '#1677ff', fontWeight: 600, fontSize: 13 }}>
           Register as Employee
-        </a>
+        </Link>
       </div>
     </div>
   );

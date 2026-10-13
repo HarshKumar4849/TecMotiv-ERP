@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-import { Form, Result, Button } from 'antd';
+import { Form, Result, Button, Typography } from 'antd';
 import useOnFetch from '@/hooks/useOnFetch';
 import { request } from '@/request';
 
@@ -10,6 +10,8 @@ import useLanguage from '@/locale/useLanguage';
 
 import Loading from '@/components/Loading';
 import AuthModule from '@/modules/AuthModule';
+
+const { Text } = Typography;
 
 const ForgetPassword = () => {
   const translate = useLanguage();
@@ -43,7 +45,12 @@ const ForgetPassword = () => {
             <Button type="primary" htmlType="submit" className="login-form-button" size="large">
               {translate('Request new Password')}
             </Button>
-            {translate('Or')} <a href="/login"> {translate('already have account Login')} </a>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+              <Link to="/login">{translate('already have account Login')}</Link>
+              <Link to="/resetpassword" style={{ fontWeight: 500 }}>
+                {translate('Reset password')}
+              </Link>
+            </div>
           </Form.Item>
         </Form>
       </Loading>
@@ -56,17 +63,27 @@ const ForgetPassword = () => {
       <Result
         status="success"
         title={translate('Check your email address to reset your password')}
-        subTitle={translate('Password Reset in progress')}
+        subTitle={translate('A password reset link has been dispatched to your email address.')}
         style={{ maxWidth: '450px', margin: 'auto' }}
         extra={
-          <Button
-            type="primary"
-            onClick={() => {
-              navigate(`/login`);
-            }}
-          >
-            {translate('Login')}
-          </Button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => {
+                navigate(`/resetpassword`);
+              }}
+            >
+              {translate('Proceed to Reset Password')}
+            </Button>
+            <Button
+              onClick={() => {
+                navigate(`/login`);
+              }}
+            >
+              {translate('Back to Login')}
+            </Button>
+          </div>
         }
       ></Result>
     );

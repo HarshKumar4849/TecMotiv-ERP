@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ROLES } = require('@/rbac/roles');
+const { ROLES } = require('../../../rbac/roles');
 
 // Helper to resolve Employee from authenticated user
 const resolveEmployee = async (user) => {

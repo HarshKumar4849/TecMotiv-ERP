@@ -17,7 +17,7 @@ const safeInterpolate = (text, dictionary = {}) => {
 // =========================================================================
 const list = async (req, res) => {
   try {
-    const Template = mongoose.models.Template || require('@/models/appModels/Template');
+    const Template = mongoose.models.Template || require('../../../models/appModels/Template');
 
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.items, 10) || 50;
@@ -72,7 +72,7 @@ const list = async (req, res) => {
 // =========================================================================
 const read = async (req, res) => {
   try {
-    const Template = mongoose.models.Template || require('@/models/appModels/Template');
+    const Template = mongoose.models.Template || require('../../../models/appModels/Template');
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -101,7 +101,7 @@ const read = async (req, res) => {
 // =========================================================================
 const create = async (req, res) => {
   try {
-    const Template = mongoose.models.Template || require('@/models/appModels/Template');
+    const Template = mongoose.models.Template || require('../../../models/appModels/Template');
     const user = req.user;
 
     const { title, category, type, description, subject, content, variables, tags } = req.body;
@@ -151,7 +151,7 @@ const create = async (req, res) => {
 // =========================================================================
 const update = async (req, res) => {
   try {
-    const Template = mongoose.models.Template || require('@/models/appModels/Template');
+    const Template = mongoose.models.Template || require('../../../models/appModels/Template');
     const user = req.user;
     const { id } = req.params;
 
@@ -191,7 +191,7 @@ const update = async (req, res) => {
 // =========================================================================
 const deleteTemplate = async (req, res) => {
   try {
-    const Template = mongoose.models.Template || require('@/models/appModels/Template');
+    const Template = mongoose.models.Template || require('../../../models/appModels/Template');
     const { id } = req.params;
 
     const template = await Template.findOne({ _id: id, removed: false });
@@ -217,8 +217,8 @@ const deleteTemplate = async (req, res) => {
 // =========================================================================
 const preview = async (req, res) => {
   try {
-    const Template = mongoose.models.Template || require('@/models/appModels/Template');
-    const Employee = mongoose.models.Employee || require('@/models/appModels/Employee');
+    const Template = mongoose.models.Template || require('../../../models/appModels/Template');
+    const Employee = mongoose.models.Employee || require('../../../models/appModels/Employee');
 
     const { id } = req.params || {};
     const { content: rawContent, subject: rawSubject, employeeId, variables = {} } = req.body || {};

@@ -1,10 +1,36 @@
 import React from 'react';
 import { Form, Input } from 'antd';
-import { LockOutlined } from '@ant-design/icons';
+import { LockOutlined, UserOutlined, KeyOutlined } from '@ant-design/icons';
 
-export default function ResetPasswordForm() {
+export default function ResetPasswordForm({ hasUrlTokens = true }) {
   return (
     <>
+      {!hasUrlTokens && (
+        <>
+          <Form.Item
+            name="userId"
+            rules={[{ required: true, message: 'Please enter your User ID from the reset email/link.' }]}
+          >
+            <Input
+              prefix={<UserOutlined className="site-form-item-icon" />}
+              placeholder="User ID (from reset link)"
+              aria-label="User ID"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            name="resetToken"
+            rules={[{ required: true, message: 'Please enter your 64-character Reset Token.' }]}
+          >
+            <Input
+              prefix={<KeyOutlined className="site-form-item-icon" />}
+              placeholder="Reset Token (from email)"
+              aria-label="Reset Token"
+              size="large"
+            />
+          </Form.Item>
+        </>
+      )}
       <Form.Item
         name="password"
         rules={[
@@ -17,7 +43,7 @@ export default function ResetPasswordForm() {
       >
         <Input.Password
           prefix={<LockOutlined className="site-form-item-icon" />}
-          placeholder="Password"
+          placeholder="New Password (min 12 chars)"
           aria-label="New password"
           size="large"
         />
@@ -43,7 +69,7 @@ export default function ResetPasswordForm() {
       >
         <Input.Password
           prefix={<LockOutlined className="site-form-item-icon" />}
-          placeholder="Confirm password"
+          placeholder="Confirm new password"
           aria-label="Confirm new password"
           size="large"
         />

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 // Ensure Employee model is loaded for population
 try {
   if (!mongoose.models.Employee) {
-    try { require('@/models/appModels/Employee'); } catch (e) { require('../../../models/appModels/Employee'); }
+    try { require('../../../models/appModels/Employee'); } catch (e) { require('../../../models/appModels/Employee'); }
   }
 } catch (e) {}
 
@@ -12,7 +12,7 @@ try {
 // =========================================================================
 const list = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
 
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.items, 10) || 100;
@@ -129,7 +129,7 @@ const list = async (req, res) => {
 // =========================================================================
 const read = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -159,8 +159,8 @@ const read = async (req, res) => {
 // =========================================================================
 const create = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
-    const Employee = mongoose.models.Employee || require('@/models/appModels/Employee');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
+    const Employee = mongoose.models.Employee || require('../../../models/appModels/Employee');
     const user = req.user;
 
     const {
@@ -245,7 +245,7 @@ const create = async (req, res) => {
 // =========================================================================
 const update = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
     const user = req.user;
     const { id } = req.params;
 
@@ -315,7 +315,7 @@ const update = async (req, res) => {
 // =========================================================================
 const deleteService = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
     const { id } = req.params;
 
     const service = await DigitalService.findOne({ _id: id, removed: false });
@@ -341,7 +341,7 @@ const deleteService = async (req, res) => {
 // =========================================================================
 const renew = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
     const user = req.user;
     const { id } = req.params;
     const { newRenewalDate, cost: updatedCost } = req.body;
@@ -397,7 +397,7 @@ const renew = async (req, res) => {
 // =========================================================================
 const reminders = async (req, res) => {
   try {
-    const DigitalService = mongoose.models.DigitalService || require('@/models/appModels/DigitalService');
+    const DigitalService = mongoose.models.DigitalService || require('../../../models/appModels/DigitalService');
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);

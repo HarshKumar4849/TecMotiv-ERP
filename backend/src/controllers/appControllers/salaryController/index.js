@@ -3,7 +3,7 @@ const pdf = require('html-pdf');
 
 let ROLES, normalizeRole;
 try {
-  ({ ROLES, normalizeRole } = require('@/rbac/roles'));
+  ({ ROLES, normalizeRole } = require('../../../rbac/roles'));
 } catch (e) {
   ({ ROLES, normalizeRole } = require('../../../rbac/roles'));
 }
