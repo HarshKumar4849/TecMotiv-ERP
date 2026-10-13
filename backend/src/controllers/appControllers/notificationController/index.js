@@ -1,6 +1,19 @@
 const mongoose = require('mongoose');
 const notificationService = require('../../../services/notificationService');
 
+// Socket.IO real-time emission (decoupled via socket.js store)
+const { getSocketIO } = require('../../../socket');
+const io = {
+  to: (room) => {
+    const instance = getSocketIO();
+    return instance ? instance.to(room) : { emit: () => {} };
+  },
+  emit: (...args) => {
+    const instance = getSocketIO();
+    if (instance) instance.emit(...args);
+  },
+};
+
 // =============================================================================
 // 1. LIST NOTIFICATIONS FOR AUTHENTICATED USER
 // =============================================================================
@@ -35,6 +48,25 @@ const list = async (req, res) => {
       Notification.countDocuments({ recipient: user._id, read: false, removed: false }),
     ]);
 
+    // Emit notifications list via Socket.IO for real-time update
+    if (io) {
+      try {
+        io.to(`user_${user._id}`).emit('notification-list', {
+          success: true,
+          notifications,
+          pagination: {
+            page,
+            pages: Math.ceil(total / limit) || 1,
+            count: total,
+          },
+          unreadCount,
+        });
+      } catch (emitError) {
+        // Socket.IO emission failed; client will re-fetch on next action
+        console.warn('Socket.IO notification-list emission failed:', emitError.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       result: notifications,
@@ -64,6 +96,18 @@ const unreadCount = async (req, res) => {
       read: false,
       removed: false,
     });
+
+    // Emit updated unread count via Socket.IO for real-time badge update
+    if (io) {
+      try {
+        io.to(`user_${user._id}`).emit('unread-count', {
+          success: true,
+          count,
+        });
+      } catch (emitError) {
+        console.warn('Socket.IO unread-count emission failed:', emitError.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -103,6 +147,23 @@ const markRead = async (req, res) => {
       removed: false,
     });
 
+    // Emit updated notification and unread count via Socket.IO
+    if (io) {
+      try {
+        io.to(`user_${user._id}`).emit('notification-read', {
+          success: true,
+          notification,
+          unreadCount: remainingUnread,
+        });
+        io.to(`user_${user._id}`).emit('unread-count', {
+          success: true,
+          count: remainingUnread,
+        });
+      } catch (emitError) {
+        console.warn('Socket.IO markRead emission failed:', emitError.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       result: notification,
@@ -126,6 +187,28 @@ const markAllRead = async (req, res) => {
       { recipient: user._id, read: false, removed: false },
       { $set: { read: true, readAt: Date.now() } }
     );
+
+    // Emit updated unread count via Socket.IO
+    const remainingUnread = await Notification.countDocuments({
+      recipient: user._id,
+      read: false,
+      removed: false,
+    });
+
+    if (io) {
+      try {
+        io.to(`user_${user._id}`).emit('unread-count', {
+          success: true,
+          count: remainingUnread,
+        });
+        io.to(`user_${user._id}`).emit('notification-cleared', {
+          success: true,
+          message: 'All notifications marked as read',
+        });
+      } catch (emitError) {
+        console.warn('Socket.IO markAllRead emission failed:', emitError.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,
