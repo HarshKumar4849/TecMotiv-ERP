@@ -102,7 +102,13 @@ const request = {
   delete: async ({ entity, id }) => {
     try {
       includeToken();
-      const response = await axios.delete(entity + '/delete/' + id);
+      let url;
+      if (id !== undefined && id !== null) {
+        url = entity.endsWith('/delete') ? `${entity}/${id}` : `${entity}/delete/${id}`;
+      } else {
+        url = entity;
+      }
+      const response = await axios.delete(url);
       successHandler(response, {
         notifyOnSuccess: true,
         notifyOnFailed: true,

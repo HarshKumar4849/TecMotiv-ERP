@@ -119,7 +119,7 @@ export default function EventsList({
 
   const handleDelete = async (id) => {
     try {
-      const res = await request.delete({ entity: `event/delete/${id}` });
+      const res = await request.delete({ entity: 'event', id });
       if (res && res.success) {
         message.success('Event deleted successfully');
         fetchEvents();
