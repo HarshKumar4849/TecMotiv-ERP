@@ -97,6 +97,19 @@ const schema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Idempotency identifier to prevent duplicate notifications on retry
+  eventId: {
+    type: String,
+    trim: true,
+    index: true,
+  },
+  // Expiry/archive metadata
+  expiresAt: {
+    type: Date,
+  },
+  archivedAt: {
+    type: Date,
+  },
 });
 
 schema.pre('save', function (next) {

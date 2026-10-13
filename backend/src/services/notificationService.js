@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
  * 1. In-App Notifications (Persisted to database)
  * 2. Email Notifications (Integrated with email pipeline)
  * 3. WhatsApp Notifications (Multi-channel template messaging)
+ * 4. Real-time Socket.IO delivery
  */
 
 const NOTIFICATION_TYPES = {
@@ -186,23 +187,33 @@ const notify = async ({
       let notificationDoc = null;
 
       // 1. In-App Notification (Database storage)
+      // Deduplicate: skip if a notification with the same eventId already exists for this recipient
       if (allowInApp && channels.includes('in_app')) {
-        notificationDoc = await new Notification({
-          recipient: rId,
-          recipientEmployee: recipientEmployee || null,
-          type: type || NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
-          title: title.trim(),
-          message: message.trim(),
-          link: link.trim(),
-          data: data || {},
-          priority: priority || 'normal',
-          read: false,
-          channelStatuses: {
-            inApp: 'delivered',
-            email: 'none',
-            whatsapp: 'none',
-          },
-        }).save();
+        const existingDoc = eventId
+          ? await Notification.findOne({ recipient: rId, eventId, removed: false })
+          : null;
+        if (!existingDoc) {
+          notificationDoc = await new Notification({
+            recipient: rId,
+            recipientEmployee: recipientEmployee || null,
+            type: type || NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
+            title: title.trim(),
+            message: message.trim(),
+            link: link.trim(),
+            data: data || {},
+            priority: priority || 'normal',
+            read: false,
+            channelStatuses: {
+              inApp: 'delivered',
+              email: 'none',
+              whatsapp: 'none',
+            },
+            eventId,
+          }).save();
+        } else {
+          // Use existing notification document
+          notificationDoc = existingDoc;
+        }
         inAppStatus = 'delivered';
       }
 
@@ -273,6 +284,7 @@ const notifyLeaveSubmitted = async ({ leave, applicantName, approverUserIds }) =
     link: '/leave',
     data: { leaveId: leave._id },
     priority: 'normal',
+    eventId: `leave_${leave._id}`,
   });
 };
 
@@ -286,6 +298,7 @@ const notifyLeaveApproved = async ({ leave, applicantUserId }) => {
     link: '/leave',
     data: { leaveId: leave._id },
     priority: 'normal',
+    eventId: `leave_${leave._id}_approved`,
   });
 };
 
@@ -299,6 +312,7 @@ const notifyLeaveRejected = async ({ leave, applicantUserId, reason }) => {
     link: '/leave',
     data: { leaveId: leave._id },
     priority: 'high',
+    eventId: `leave_${leave._id}_rejected`,
   });
 };
 
@@ -312,6 +326,7 @@ const notifyTaskAssigned = async ({ task, assigneeUserId, assignerName }) => {
     link: '/tasks',
     data: { taskId: task._id },
     priority: 'normal',
+    eventId: `task_${task._id}_assigned`,
   });
 };
 
@@ -325,6 +340,7 @@ const notifyTaskDue = async ({ task, assigneeUserId }) => {
     link: '/tasks',
     data: { taskId: task._id },
     priority: 'high',
+    eventId: `task_${task._id}_due`,
   });
 };
 
@@ -339,6 +355,7 @@ const notifyTaskOverdue = async ({ task, assigneeUserId, reviewerUserId }) => {
     link: '/tasks',
     data: { taskId: task._id },
     priority: 'urgent',
+    eventId: `task_${task._id}_overdue`,
   });
 };
 
@@ -353,6 +370,7 @@ const notifyBirthday = async ({ employee, colleagueUserIds }) => {
     link: '/calendar',
     data: { employeeId: employee._id },
     priority: 'normal',
+    eventId: `birthday_${employee._id}`,
   });
 };
 
@@ -367,6 +385,7 @@ const notifyAnniversary = async ({ employee, colleagueUserIds, yearsCompleted })
     link: '/calendar',
     data: { employeeId: employee._id, yearsCompleted },
     priority: 'normal',
+    eventId: `anniversary_${employee._id}`,
   });
 };
 
@@ -380,6 +399,7 @@ const notifyPolicyAcknowledgement = async ({ policy, userIds }) => {
     link: '/policies',
     data: { policyId: policy._id },
     priority: 'high',
+    eventId: `policy_${policy._id}`,
   });
 };
 
@@ -393,6 +413,7 @@ const notifyDocumentExpiry = async ({ document, userIds, daysLeft }) => {
     link: '/employee',
     data: { documentId: document._id },
     priority: 'high',
+    eventId: `document_${document._id}`,
   });
 };
 
@@ -407,6 +428,7 @@ const notifyProbationEnding = async ({ employee, hrUserIds, daysLeft }) => {
     link: '/employee',
     data: { employeeId: employee._id },
     priority: 'high',
+    eventId: `probation_${employee._id}`,
   });
 };
 
@@ -420,6 +442,7 @@ const notifyEventReminder = async ({ event, participantUserIds }) => {
     link: '/events',
     data: { eventId: event._id },
     priority: 'normal',
+    eventId: `event_${event._id}`,
   });
 };
 
@@ -432,6 +455,7 @@ const notifyRecognitionNomination = async ({ recipientUserId, nomineeName, award
     message: `Congratulations! You have received recognition: "${awardName}". Keep up the exceptional work at TecMotiv!`,
     link: '/recognition',
     priority: 'normal',
+    eventId: `recognition_${recipientUserId}_${Date.now()}`,
   });
 };
 
@@ -444,6 +468,7 @@ const notifySalarySlipAvailable = async ({ employeeUserId, salaryPeriod }) => {
     message: `Your verified salary slip for period ${salaryPeriod} is now available in your employee self-service portal.`,
     link: '/payroll',
     priority: 'normal',
+    eventId: `salary_slip_${employeeUserId}_${salaryPeriod}`,
   });
 };
 
@@ -457,6 +482,7 @@ const notifySaaSRenewal = async ({ service, adminUserIds, daysLeft }) => {
     link: '/admin',
     data: { serviceId: service._id },
     priority: 'high',
+    eventId: `saas_${service._id}`,
   });
 };
 
