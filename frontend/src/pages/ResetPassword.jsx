@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 
 import { resetPassword } from '@/redux/auth/actions';
 import { selectAuth } from '@/redux/auth/selectors';
@@ -21,17 +21,22 @@ const ResetPassword = () => {
 
   const dispatch = useDispatch();
   const onFinish = async (values) => {
+    const targetUserId = userId || values.userId;
+    const targetResetToken = resetToken || values.resetToken;
+
     const result = await dispatch(
       resetPassword({
         resetPasswordData: {
           password: values.password,
-          userId,
-          resetToken,
+          userId: targetUserId,
+          resetToken: targetResetToken,
         },
       })
     );
     if (result?.success) navigate('/login');
   };
+
+  const hasUrlTokens = Boolean(userId && resetToken);
 
   const FormContainer = () => {
     return (
@@ -44,12 +49,12 @@ const ResetPassword = () => {
           }}
           onFinish={onFinish}
         >
-          <ResetPasswordForm />
+          <ResetPasswordForm hasUrlTokens={hasUrlTokens} />
           <Form.Item>
             <Button type="primary" htmlType="submit" className="login-form-button" size="large">
               {translate('update password')}
             </Button>
-            {translate('Or')} <a href="/login"> {translate('already have account Login')} </a>
+            {translate('Or')} <Link to="/login"> {translate('already have account Login')} </Link>
           </Form.Item>
         </Form>
       </Loading>

@@ -3,21 +3,42 @@ const path = require('path');
 const fs = require('fs');
 const { slugify } = require('transliteration');
 
-const VAULT_DIR = path.resolve(process.env.DOCUMENT_VAULT_DIR || 'src/storage/vault');
+const defaultVaultPath = process.env.VERCEL ? '/tmp/storage/vault' : 'src/storage/vault';
+let VAULT_DIR = path.resolve(process.env.DOCUMENT_VAULT_DIR || defaultVaultPath);
 
-// Ensure directory exists
-if (!fs.existsSync(VAULT_DIR)) {
-  fs.mkdirSync(VAULT_DIR, { recursive: true });
+// Ensure directory exists safely
+try {
+  if (!fs.existsSync(VAULT_DIR)) {
+    fs.mkdirSync(VAULT_DIR, { recursive: true });
+  }
+} catch (err) {
+  VAULT_DIR = '/tmp/storage/vault';
+  try {
+    if (!fs.existsSync(VAULT_DIR)) {
+      fs.mkdirSync(VAULT_DIR, { recursive: true });
+    }
+  } catch (e) {
+    console.warn('Document vault filesystem notice:', e.message);
+  }
 }
 
 // Storage engine for private document vault
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const vaultDir = path.resolve(process.env.DOCUMENT_VAULT_DIR || 'src/storage/vault');
-    if (!fs.existsSync(vaultDir)) {
-      fs.mkdirSync(vaultDir, { recursive: true });
+    let targetDir = VAULT_DIR;
+    try {
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+    } catch (err) {
+      targetDir = '/tmp/storage/vault';
+      try {
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+      } catch (e) {}
     }
-    cb(null, vaultDir);
+    cb(null, targetDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();

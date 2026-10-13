@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ROLES } = require('@/rbac/roles');
+const { ROLES } = require('../../../rbac/roles');
 
 // Helper to normalize date to YYYY-MM-DD and start of day
 const getDayBounds = (d = new Date()) => {

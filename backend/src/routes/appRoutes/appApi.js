@@ -1,10 +1,10 @@
 const express = require('express');
-const { catchErrors } = require('@/handlers/errorHandlers');
-const rbacMiddleware = require('@/middlewares/rbacMiddleware');
+const { catchErrors } = require('../../handlers/errorHandlers');
+const rbacMiddleware = require('../../middlewares/rbacMiddleware');
 const router = express.Router();
 
-const appControllers = require('@/controllers/appControllers');
-const { routesList } = require('@/models/utils');
+const appControllers = require('../../controllers/appControllers');
+const { routesList } = require('../../models/utils');
 
 const routerApp = (entity, controller) => {
   if (entity !== 'document') {
@@ -27,8 +27,8 @@ routesList.forEach(({ entity, controllerName }) => {
   }
 });
 
-const { singleStorageUpload } = require('@/middlewares/uploadMiddleware');
-const vaultUpload = require('@/middlewares/uploadMiddleware/vaultStorageUpload');
+const { singleStorageUpload } = require('../../middlewares/uploadMiddleware');
+const vaultUpload = require('../../middlewares/uploadMiddleware/vaultStorageUpload');
 
 // Dedicated employee endpoints: Photo Upload & Quick Status Change
 if (appControllers['employeeController']) {

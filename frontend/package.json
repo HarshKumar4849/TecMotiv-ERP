@@ -1,9 +1,8 @@
 {
-  "name": "idurar-erp-crm",
+  "name": "tecmotiv-erp-frontend",
   "version": "4.1.0",
   "engines": {
-    "node": "20.9.0",
-    "npm": "10.2.4"
+    "node": "24.x"
   },
   "type": "module",
   "dependencies": {

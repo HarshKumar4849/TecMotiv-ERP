@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const mail = require('@/handlers/mail');
+const mail = require('../../../handlers/mail');
 
 const resendOtp = async (req, res, { userModel }) => {
   try {

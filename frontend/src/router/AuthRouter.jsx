@@ -19,7 +19,13 @@ export default function AuthRouter() {
       <Route element={<Navigate to="/login" replace />} path="/logout" />
       <Route element={<Register />} path="/register" />
       <Route element={<ForgetPassword />} path="/forgetpassword" />
+      <Route element={<ForgetPassword />} path="/forgotpassword" />
+      <Route element={<ForgetPassword />} path="/forget-password" />
+      <Route element={<ForgetPassword />} path="/forgot-password" />
       <Route element={<ResetPassword />} path="/resetpassword/:userId/:resetToken" />
+      <Route element={<ResetPassword />} path="/reset-password/:userId/:resetToken" />
+      <Route element={<ResetPassword />} path="/resetpassword" />
+      <Route element={<ResetPassword />} path="/reset-password" />
       {/* While signed out only auth routes are reachable. Any other URL is a
           deep link into the protected app, so send the user to the login screen
           instead of a misleading 404. */}

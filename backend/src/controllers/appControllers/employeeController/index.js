@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ROLES, normalizeRole } = require('@/rbac/roles');
+const { ROLES, normalizeRole } = require('../../../rbac/roles');
 
 const isEmployeeRole = (req) => {
   const role = req.userRole || (req.user && req.user.role);

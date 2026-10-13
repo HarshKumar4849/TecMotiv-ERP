@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const Joi = require('joi');
-const mail = require('@/handlers/mail');
+const mail = require('../../../handlers/mail');
 
 const register = async (req, res, { userModel }) => {
   try {
