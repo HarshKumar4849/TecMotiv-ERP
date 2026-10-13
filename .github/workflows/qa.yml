@@ -39,6 +39,7 @@ jobs:
         ports: ['27017:27017']
     env:
       DATABASE: mongodb://127.0.0.1:27017/tecmotiv_qa
+      PORT: 8899
       JWT_SECRET: ci-only-qa-secret
       QA_RUN_ID: ci-${{ github.run_id }}
       QA_FIXTURE_PASSWORD: TecMotiv-QA-Only-2026!

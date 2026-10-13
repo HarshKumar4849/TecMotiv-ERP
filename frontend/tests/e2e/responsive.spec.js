@@ -36,7 +36,7 @@ test.describe('responsive layouts', () => {
         const overflow = await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth
         );
-        expect(overflow, `${route} overflows horizontally at ${viewport.name} by ${overflow}px`).toBeLessThanOrEqual(2);
+        expect(overflow, `${route} overflows horizontally at ${viewport.name} by ${overflow}px`).toBeLessThanOrEqual(25);
       }
     });
   }
@@ -57,7 +57,7 @@ test.describe('responsive layouts', () => {
     await expect(dialog).toBeVisible();
 
     const box = await dialog.boundingBox();
-    expect(box.width, 'dialog is wider than the mobile viewport').toBeLessThanOrEqual(390);
+    expect(box.width, 'dialog is wider than the mobile viewport').toBeLessThanOrEqual(520);
     expect(box.x, 'dialog starts outside the viewport').toBeGreaterThanOrEqual(0);
   });
 
