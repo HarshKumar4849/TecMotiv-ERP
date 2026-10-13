@@ -1,8 +1,33 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { slugify } = require('transliteration');
 
 const fileFilter = require('./utils/LocalfileFilter');
+
+const getUploadDir = (entity) => {
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const baseDir = isServerless
+    ? path.join('/tmp', 'public', 'uploads', entity)
+    : path.resolve(__dirname, '../../public/uploads', entity);
+
+  try {
+    if (!fs.existsSync(baseDir)) {
+      fs.mkdirSync(baseDir, { recursive: true });
+    }
+    return baseDir;
+  } catch (err) {
+    const fallback = path.join('/tmp', 'public', 'uploads', entity);
+    try {
+      if (!fs.existsSync(fallback)) {
+        fs.mkdirSync(fallback, { recursive: true });
+      }
+      return fallback;
+    } catch (e) {
+      return baseDir;
+    }
+  }
+};
 
 const singleStorageUpload = ({
   entity,
@@ -12,25 +37,24 @@ const singleStorageUpload = ({
 }) => {
   var diskStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, `src/public/uploads/${entity}`);
+      const uploadDir = getUploadDir(entity);
+      cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
       try {
-        // fetching the file extension of the uploaded file
         let fileExtension = path.extname(file.originalname);
         let uniqueFileID = Math.random().toString(36).slice(2, 7); // generates unique ID of length 5
 
         let originalname = '';
         if (req.body.seotitle) {
-          originalname = slugify(req.body.seotitle.toLocaleLowerCase()); // convert any language to English characters
+          originalname = slugify(req.body.seotitle.toLocaleLowerCase());
         } else {
-          originalname = slugify(file.originalname.split('.')[0].toLocaleLowerCase()); // convert any language to English characters
+          originalname = slugify(file.originalname.split('.')[0].toLocaleLowerCase());
         }
 
         let _fileName = `${originalname}-${uniqueFileID}${fileExtension}`;
 
         const filePath = `public/uploads/${entity}/${_fileName}`;
-        // saving file name and extension in request upload object
         req.upload = {
           fileName: _fileName,
           fieldExt: fileExtension,
@@ -44,7 +68,7 @@ const singleStorageUpload = ({
 
         cb(null, _fileName);
       } catch (error) {
-        cb(error); // pass the error to the callback
+        cb(error);
       }
     },
   });
