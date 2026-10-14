@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Input } from 'antd';
-import { LockOutlined, UserOutlined, KeyOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, KeyOutlined } from '@ant-design/icons';
 
 export default function ResetPasswordForm({ hasUrlTokens = true }) {
   return (
@@ -8,24 +8,27 @@ export default function ResetPasswordForm({ hasUrlTokens = true }) {
       {!hasUrlTokens && (
         <>
           <Form.Item
-            name="userId"
-            rules={[{ required: true, message: 'Please enter your User ID from the reset email/link.' }]}
+            name="email"
+            rules={[
+              { required: true, message: 'Please enter your registered email address.' },
+              { type: 'email', message: 'Enter a valid email address.' },
+            ]}
           >
             <Input
-              prefix={<UserOutlined className="site-form-item-icon" />}
-              placeholder="User ID (from reset link)"
-              aria-label="User ID"
+              prefix={<MailOutlined className="site-form-item-icon" />}
+              placeholder="Registered Email Address"
+              aria-label="Registered Email Address"
               size="large"
             />
           </Form.Item>
           <Form.Item
             name="resetToken"
-            rules={[{ required: true, message: 'Please enter your 64-character Reset Token.' }]}
+            rules={[{ required: true, message: 'Please enter the 6-digit verification code or reset token.' }]}
           >
             <Input
               prefix={<KeyOutlined className="site-form-item-icon" />}
-              placeholder="Reset Token (from email)"
-              aria-label="Reset Token"
+              placeholder="6-Digit Code (or Reset Token from email)"
+              aria-label="Reset Code or Token"
               size="large"
             />
           </Form.Item>
@@ -36,14 +39,15 @@ export default function ResetPasswordForm({ hasUrlTokens = true }) {
         rules={[
           {
             required: true,
+            message: 'Please enter your new password.',
           },
-          { min: 12, message: 'Use at least 12 characters.' },
+          { min: 8, message: 'Use at least 8 characters.' },
           { max: 128, message: 'Use no more than 128 characters.' },
         ]}
       >
         <Input.Password
           prefix={<LockOutlined className="site-form-item-icon" />}
-          placeholder="New Password (min 12 chars)"
+          placeholder="New Password (min 8 chars)"
           aria-label="New password"
           size="large"
         />
@@ -54,7 +58,7 @@ export default function ResetPasswordForm({ hasUrlTokens = true }) {
           {
             required: true,
           },
-          { min: 12, message: 'Use at least 12 characters.' },
+          { min: 8, message: 'Use at least 8 characters.' },
           { max: 128, message: 'Use no more than 128 characters.' },
           ({ getFieldValue }) => ({
             validator(_, value) {

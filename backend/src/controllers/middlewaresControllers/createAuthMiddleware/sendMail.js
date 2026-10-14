@@ -5,6 +5,7 @@ const sendMail = async ({
   email,
   name,
   link,
+  otp,
   idurar_app_email,
   subject = 'Verify your email | TecMotiv ERP',
   type = 'emailVerfication',
@@ -13,7 +14,7 @@ const sendMail = async ({
   return await mailHandler.send({
     to: email,
     subject,
-    html: passwordVerfication({ name, link }),
+    html: passwordVerfication({ name, link, otp }),
   });
 };
 
