@@ -35,52 +35,47 @@ export default function ErpCrmApp() {
   const role = normalizeRole(rawRole);
   const canFetchSettings = role === ROLES.ADMIN;
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (canFetchSettings) {
       dispatch(settingsAction.list({ entity: 'setting' }));
     }
-  }, [canFetchSettings]);
+  }, [canFetchSettings, dispatch]);
 
-  const { isSuccess: settingIsloaded } = useSelector(selectSettings);
-  const isReady = canFetchSettings ? settingIsloaded : true;
+  return (
+    <Layout hasSider>
+      <Navigation />
 
-  if (isReady)
-    return (
-      <Layout hasSider>
-        <Navigation />
-
-        {isMobile ? (
-          <Layout style={{ marginLeft: 0 }}>
-            <HeaderContent />
-            <Content
-              style={{
-                margin: '40px auto 30px',
-                overflow: 'initial',
-                width: '100%',
-                padding: '0 25px',
-                maxWidth: 'none',
-              }}
-            >
-              <AppRouter />
-            </Content>
-          </Layout>
-        ) : (
-          <Layout>
-            <HeaderContent />
-            <Content
-              style={{
-                margin: '40px auto 30px',
-                overflow: 'initial',
-                width: '100%',
-                padding: '0 50px',
-                maxWidth: 1400,
-              }}
-            >
-              <AppRouter />
-            </Content>
-          </Layout>
-        )}
-      </Layout>
-    );
-  else return <PageLoader />;
+      {isMobile ? (
+        <Layout style={{ marginLeft: 0 }}>
+          <HeaderContent />
+          <Content
+            style={{
+              margin: '40px auto 30px',
+              overflow: 'initial',
+              width: '100%',
+              padding: '0 25px',
+              maxWidth: 'none',
+            }}
+          >
+            <AppRouter />
+          </Content>
+        </Layout>
+      ) : (
+        <Layout>
+          <HeaderContent />
+          <Content
+            style={{
+              margin: '40px auto 30px',
+              overflow: 'initial',
+              width: '100%',
+              padding: '0 50px',
+              maxWidth: 1400,
+            }}
+          >
+            <AppRouter />
+          </Content>
+        </Layout>
+      )}
+    </Layout>
+  );
 }
