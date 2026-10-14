@@ -46,11 +46,13 @@ import dayjs from 'dayjs';
 import { selectCurrentAdmin } from '@/redux/auth/selectors';
 import { normalizeRole, ROLES } from '@/utils/rbac';
 import { request } from '@/request';
+import useResponsive from '@/hooks/useResponsive';
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function DashboardModule() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const currentAdmin = useSelector(selectCurrentAdmin);
   const userRole = normalizeRole(currentAdmin?.role);
 
@@ -346,7 +348,7 @@ export default function DashboardModule() {
             </Paragraph>
           </Col>
 
-          <Col xs={24} md={8} style={{ textAlign: 'right' }}>
+          <Col xs={24} md={8} style={{ textAlign: isMobile ? 'left' : 'right' }}>
             <Space wrap>
               <Button
                 icon={<ReloadOutlined />}
@@ -443,7 +445,7 @@ export default function DashboardModule() {
 
         <Row gutter={[14, 14]}>
           {(isEmployee ? employeeKpiCardItems : kpiCardItems).map((item, idx) => (
-            <Col xs={12} sm={8} md={6} lg={4} xl={4} key={idx} style={{ flex: '1 0 18%' }}>
+            <Col xs={12} sm={8} md={6} lg={4} xl={4} key={idx}>
               <Card
                 hoverable
                 onClick={() => navigate(item.link)}

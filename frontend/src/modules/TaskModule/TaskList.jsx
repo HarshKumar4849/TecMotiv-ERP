@@ -486,8 +486,8 @@ export default function TaskList({
         </Row>
 
         {/* Buttons Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <Space wrap>
             <Button
               type={isOverdueOnly ? 'primary' : 'default'}
               danger={isOverdueOnly}
@@ -523,6 +523,7 @@ export default function TaskList({
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}
+        scroll={{ x: 1000 }}
         style={{ borderRadius: 8, overflow: 'hidden' }}
       />
     </Card>

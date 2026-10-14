@@ -42,40 +42,24 @@ export default function ErpCrmApp() {
   }, [canFetchSettings, dispatch]);
 
   return (
-    <Layout hasSider>
+    <Layout hasSider style={{ minHeight: '100vh', background: '#f8fafc' }}>
       <Navigation />
 
-      {isMobile ? (
-        <Layout style={{ marginLeft: 0 }}>
-          <HeaderContent />
-          <Content
-            style={{
-              margin: '40px auto 30px',
-              overflow: 'initial',
-              width: '100%',
-              padding: '0 25px',
-              maxWidth: 'none',
-            }}
-          >
-            <AppRouter />
-          </Content>
-        </Layout>
-      ) : (
-        <Layout>
-          <HeaderContent />
-          <Content
-            style={{
-              margin: '40px auto 30px',
-              overflow: 'initial',
-              width: '100%',
-              padding: '0 50px',
-              maxWidth: 1400,
-            }}
-          >
-            <AppRouter />
-          </Content>
-        </Layout>
-      )}
+      <Layout style={{ minHeight: '100vh', background: '#f8fafc', minWidth: 0 }}>
+        <HeaderContent />
+        <Content
+          style={{
+            margin: isMobile ? '16px auto 24px' : '24px auto 32px',
+            overflow: 'initial',
+            width: '100%',
+            padding: isMobile ? '0 12px' : '0 24px',
+            maxWidth: 1440,
+            minWidth: 0,
+          }}
+        >
+          <AppRouter />
+        </Content>
+      </Layout>
     </Layout>
   );
 }
