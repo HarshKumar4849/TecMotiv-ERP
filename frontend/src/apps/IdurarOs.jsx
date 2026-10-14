@@ -6,7 +6,17 @@ import { AppContextProvider } from '@/context/appContext';
 import PageLoader from '@/components/PageLoader';
 import AuthRouter from '@/router/AuthRouter';
 import Localization from '@/locale/Localization';
-import { notification } from 'antd';
+import { notification, message } from 'antd';
+
+notification.config({
+  duration: 3,
+  maxCount: 3,
+});
+
+message.config({
+  duration: 3,
+  maxCount: 3,
+});
 
 const ErpApp = lazy(() => import('./ErpApp'));
 
