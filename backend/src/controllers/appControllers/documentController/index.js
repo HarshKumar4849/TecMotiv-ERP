@@ -3,6 +3,108 @@ const path = require('path');
 const fs = require('fs');
 const { ROLES, normalizeRole } = require('../../../rbac/roles');
 
+const resolveOrCreateEmployee = async (userDoc) => {
+  if (!userDoc) return null;
+  const Employee = mongoose.model('Employee');
+  const userId = userDoc._id;
+  const userEmail = (userDoc.email || '').toLowerCase().trim();
+  const userEmpId = (userDoc.employeeId || '').toUpperCase().trim();
+
+  // 1. Broadly search for any existing Employee document across all matching criteria
+  const orClauses = [];
+  if (userId) orClauses.push({ user: userId });
+  if (userEmail) {
+    orClauses.push({ email: userEmail });
+    orClauses.push({ personalEmail: userEmail });
+  }
+  if (userEmpId) {
+    orClauses.push({ employeeId: userEmpId });
+  }
+
+  let emp = orClauses.length > 0 ? await Employee.findOne({ $or: orClauses }) : null;
+
+  if (emp) {
+    let changed = false;
+    if (emp.removed) {
+      emp.removed = false;
+      changed = true;
+    }
+    if (userId && (!emp.user || emp.user.toString() !== userId.toString())) {
+      emp.user = userId;
+      changed = true;
+    }
+    if (!emp.name && userDoc.name) {
+      emp.name = userDoc.name;
+      changed = true;
+    }
+    if (!emp.surname && userDoc.surname) {
+      emp.surname = userDoc.surname;
+      changed = true;
+    }
+    if (changed) {
+      await emp.save();
+    }
+    return emp;
+  }
+
+  // 2. Generate guaranteed collision-free employeeId
+  let candidateEmpId = userEmpId;
+  if (!candidateEmpId) {
+    for (let attempts = 0; attempts < 30; attempts++) {
+      const randNum = Math.floor(1000 + Math.random() * 9000);
+      const testId = `TM-${randNum}`;
+      const exists = await Employee.findOne({ employeeId: testId });
+      if (!exists) {
+        candidateEmpId = testId;
+        break;
+      }
+    }
+    if (!candidateEmpId) candidateEmpId = `TM-${Date.now().toString().slice(-4)}`;
+  }
+
+  const role = normalizeRole ? normalizeRole(userDoc.role || (userDoc.department === 'HR' ? 'HR' : '')) : userDoc.role;
+  const newEmp = new Employee({
+    employeeId: candidateEmpId,
+    name: userDoc.name || 'Employee',
+    surname: userDoc.surname || '',
+    email: userEmail || `emp-${Date.now()}@tecmotiv.local`,
+    departmentName: userDoc.department || 'General',
+    designationName: userDoc.designation || (role === ROLES.HR ? 'HR Specialist' : 'Staff'),
+    status: 'Active',
+    user: userId,
+    removed: false,
+    enabled: true,
+  });
+
+  try {
+    await newEmp.save();
+    if (userDoc.save && !userDoc.employeeId) {
+      try {
+        userDoc.employeeId = candidateEmpId;
+        await userDoc.save();
+      } catch (e) {}
+    }
+    return newEmp;
+  } catch (err) {
+    if (err.code === 11000) {
+      const existing = await Employee.findOne({
+        $or: [
+          ...(userEmail ? [{ email: userEmail }] : []),
+          { employeeId: candidateEmpId },
+          ...(userId ? [{ user: userId }] : []),
+        ],
+      });
+      if (existing) {
+        if (userId) existing.user = userId;
+        existing.removed = false;
+        await existing.save();
+        return existing;
+      }
+    }
+    throw err;
+  }
+};
+
 const documentController = {
   // ==========================================
   // UPLOAD / CREATE DOCUMENT
@@ -98,23 +200,7 @@ const documentController = {
       }
 
       if (adminUser) {
-        const empCode = adminUser.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
-        const targetRole = normalizeRole ? normalizeRole(adminUser.role || (adminUser.department === 'HR' ? 'HR' : '')) : adminUser.role;
-        empRecord = new Employee({
-          employeeId: empCode,
-          name: adminUser.name || 'Employee',
-          surname: adminUser.surname || '',
-          email: adminUser.email,
-          departmentName: adminUser.department || 'General',
-          designationName: adminUser.designation || (targetRole === ROLES.HR ? 'HR Specialist' : 'Staff'),
-          status: 'Active',
-          user: adminUser._id,
-        });
-        await empRecord.save();
-        if (!adminUser.employeeId) {
-          adminUser.employeeId = empCode;
-          await adminUser.save();
-        }
+        empRecord = await resolveOrCreateEmployee(adminUser);
       }
     }
 
@@ -135,26 +221,11 @@ const documentController = {
         removed: false,
       });
       if (!ownEmployee) {
-        const empCode = user.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
-        ownEmployee = new Employee({
-          employeeId: empCode,
-          name: user.name || 'Employee',
-          surname: user.surname || '',
-          email: user.email,
-          departmentName: user.department || 'General',
-          designationName: user.designation || 'Staff',
-          status: 'Active',
-          user: user._id,
-        });
-        await ownEmployee.save();
-        if (!user.employeeId) {
-          user.employeeId = empCode;
-          await user.save();
-        }
+        ownEmployee = await resolveOrCreateEmployee(user);
       }
       // Multipart fields are parsed after RBAC middleware. Enforce ownership
       // here as the final authority and never trust client employee IDs.
-      empRecord = ownEmployee;
+      empRecord = ownEmployee || empRecord;
     }
     const uploadedByName = user ? `${user.name || ''} ${user.surname || ''}`.trim() : 'System';
 
