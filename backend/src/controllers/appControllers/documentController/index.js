@@ -69,8 +69,53 @@ const documentController = {
     if (mongoose.Types.ObjectId.isValid(empInput)) {
       empRecord = await Employee.findOne({ _id: empInput, removed: false });
     }
+    if (!empRecord && mongoose.Types.ObjectId.isValid(empInput)) {
+      empRecord = await Employee.findOne({ user: empInput, removed: false });
+    }
     if (!empRecord) {
-      empRecord = await Employee.findOne({ employeeId: empInput.toUpperCase(), removed: false });
+      empRecord = await Employee.findOne({
+        $or: [
+          { employeeId: String(empInput).toUpperCase() },
+          { email: String(empInput).toLowerCase() },
+          { personalEmail: String(empInput).toLowerCase() },
+        ],
+        removed: false,
+      });
+    }
+
+    const user = req.user || req.admin;
+    const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
+    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+
+    // If still not found, check if empInput corresponds to the requesting user or an existing Admin account
+    if (!empRecord) {
+      const Admin = mongoose.model('Admin');
+      let adminUser = null;
+      if (user && (user._id?.toString() === String(empInput) || user.employeeId === empInput || user.email === empInput)) {
+        adminUser = user;
+      } else if (mongoose.Types.ObjectId.isValid(empInput)) {
+        adminUser = await Admin.findOne({ _id: empInput, removed: false });
+      }
+
+      if (adminUser) {
+        const empCode = adminUser.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
+        const targetRole = normalizeRole ? normalizeRole(adminUser.role || (adminUser.department === 'HR' ? 'HR' : '')) : adminUser.role;
+        empRecord = new Employee({
+          employeeId: empCode,
+          name: adminUser.name || 'Employee',
+          surname: adminUser.surname || '',
+          email: adminUser.email,
+          departmentName: adminUser.department || 'General',
+          designationName: adminUser.designation || (targetRole === ROLES.HR ? 'HR Specialist' : 'Staff'),
+          status: 'Active',
+          user: adminUser._id,
+        });
+        await empRecord.save();
+        if (!adminUser.employeeId) {
+          adminUser.employeeId = empCode;
+          await adminUser.save();
+        }
+      }
     }
 
     if (!empRecord) {
@@ -84,24 +129,28 @@ const documentController = {
       });
     }
 
-    const user = req.user || req.admin;
-    const userRole = user ? normalizeRole(user.role) : '';
-    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
-
     if (user && !isPrivileged) {
-      const ownEmployee = await Employee.findOne({
+      let ownEmployee = await Employee.findOne({
         $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
         removed: false,
       });
       if (!ownEmployee) {
-        if (req.file && fs.existsSync(req.file.path)) {
-          try { fs.unlinkSync(req.file.path); } catch (e) {}
-        }
-        return res.status(400).json({
-          success: false,
-          result: null,
-          message: 'No associated employee profile found for user account.',
+        const empCode = user.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
+        ownEmployee = new Employee({
+          employeeId: empCode,
+          name: user.name || 'Employee',
+          surname: user.surname || '',
+          email: user.email,
+          departmentName: user.department || 'General',
+          designationName: user.designation || 'Staff',
+          status: 'Active',
+          user: user._id,
         });
+        await ownEmployee.save();
+        if (!user.employeeId) {
+          user.employeeId = empCode;
+          await user.save();
+        }
       }
       // Multipart fields are parsed after RBAC middleware. Enforce ownership
       // here as the final authority and never trust client employee IDs.
@@ -405,7 +454,7 @@ const documentController = {
     const andConditions = [{ removed: false }];
 
     const user = req.user || req.admin;
-    const userRole = user ? normalizeRole(user.role) : '';
+    const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
     const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
 
     if (!isPrivileged && user) {
@@ -422,7 +471,18 @@ const documentController = {
       andConditions.push({ $or: orClauses });
     } else if (employee && employee !== 'all') {
       if (mongoose.Types.ObjectId.isValid(employee)) {
-        andConditions.push({ employee: employee });
+        const Employee = mongoose.model('Employee');
+        const matchedEmp = await Employee.findOne({
+          $or: [{ _id: employee }, { user: employee }],
+          removed: false,
+        });
+        if (matchedEmp) {
+          andConditions.push({
+            $or: [{ employee: matchedEmp._id }, { employeeId: matchedEmp.employeeId }],
+          });
+        } else {
+          andConditions.push({ employee: employee });
+        }
       } else {
         andConditions.push({
           $or: [
@@ -525,7 +585,7 @@ const documentController = {
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const user = req.user || req.admin;
-    const userRole = user ? normalizeRole(user.role) : '';
+    const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
     const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
 
     const andConditions = [{ removed: false }];
@@ -544,7 +604,18 @@ const documentController = {
       andConditions.push({ $or: orClauses });
     } else if (req.query.employee && req.query.employee !== 'all') {
       if (mongoose.Types.ObjectId.isValid(req.query.employee)) {
-        andConditions.push({ employee: new mongoose.Types.ObjectId(req.query.employee) });
+        const Employee = mongoose.model('Employee');
+        const matchedEmp = await Employee.findOne({
+          $or: [{ _id: req.query.employee }, { user: req.query.employee }],
+          removed: false,
+        });
+        if (matchedEmp) {
+          andConditions.push({
+            $or: [{ employee: matchedEmp._id }, { employeeId: matchedEmp.employeeId }],
+          });
+        } else {
+          andConditions.push({ employee: new mongoose.Types.ObjectId(req.query.employee) });
+        }
       }
     }
 

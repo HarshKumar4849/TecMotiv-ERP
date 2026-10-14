@@ -212,19 +212,58 @@ const employeeController = {
   // ==========================================
   read: async (req, res) => {
     const Employee = mongoose.model('Employee');
+    const Admin = mongoose.model('Admin');
     const { id } = req.params;
 
-    const query = mongoose.Types.ObjectId.isValid(id)
-      ? { $or: [{ _id: id }, { user: id }] }
-      : { employeeId: id.toUpperCase() };
+    const targetId = (id === 'self' || id === 'me') && req.user ? req.user._id : id;
 
-    const result = await Employee.findOne({ ...query, removed: false })
+    const query = mongoose.Types.ObjectId.isValid(targetId)
+      ? { $or: [{ _id: targetId }, { user: targetId }] }
+      : {
+          $or: [
+            { employeeId: String(targetId).toUpperCase() },
+            { email: String(targetId).toLowerCase() },
+          ],
+        };
+
+    let result = await Employee.findOne({ ...query, removed: false })
       .populate('department', 'name code description')
       .populate('designation', 'name code level description')
       .populate('workLocation', 'name code city state country type')
       .populate('reportingManager', 'name surname employeeId email photo designationName departmentName')
       .populate('assignedProjects', 'name code description status startDate endDate')
       .populate('user', 'email role enabled created');
+
+    if (!result) {
+      // Check if targetId matches an Admin record
+      let adminUser = null;
+      if (req.user && (req.user._id?.toString() === String(targetId) || req.user.employeeId === targetId || req.user.email === targetId)) {
+        adminUser = req.user;
+      } else if (mongoose.Types.ObjectId.isValid(targetId)) {
+        adminUser = await Admin.findOne({ _id: targetId, removed: false });
+      }
+
+      if (adminUser) {
+        // Auto-create/link the missing Employee profile for this Admin account
+        const empCode = adminUser.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
+        const userRole = normalizeRole ? normalizeRole(adminUser.role || (adminUser.department === 'HR' ? 'HR' : '')) : adminUser.role;
+        result = new Employee({
+          employeeId: empCode,
+          name: adminUser.name || 'Employee',
+          surname: adminUser.surname || '',
+          email: adminUser.email,
+          departmentName: adminUser.department || 'General',
+          designationName: adminUser.designation || (userRole === ROLES.HR ? 'HR Specialist' : 'Staff'),
+          status: 'Active',
+          user: adminUser._id,
+        });
+        await result.save();
+        if (!adminUser.employeeId) {
+          adminUser.employeeId = empCode;
+          await adminUser.save();
+        }
+      }
+    }
 
     if (!result) {
       return res.status(404).json({

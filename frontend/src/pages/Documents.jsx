@@ -14,7 +14,7 @@ const { Option } = Select;
 
 export default function Documents() {
   const currentAdmin = useSelector(selectCurrentAdmin);
-  const userRole = normalizeRole(currentAdmin?.role);
+  const userRole = normalizeRole(currentAdmin?.role || (currentAdmin?.department === 'HR' ? 'HR' : ''));
 
   const isEmployee = userRole === ROLES.EMPLOYEE;
   const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
@@ -39,7 +39,42 @@ export default function Documents() {
     const init = async () => {
       setLoading(true);
       try {
-        if (isEmployee) {
+        if (isPrivileged) {
+          // Privileged (Admin / HR / Management): fetch all employees
+          let ownRecord = null;
+          if (currentAdmin?._id) {
+            try {
+              const selfRes = await axios.get(
+                `${API_BASE_URL}employee/read/${currentAdmin._id}`,
+                getAuthHeaders()
+              );
+              if (selfRes.data?.success && selfRes.data?.result) {
+                ownRecord = selfRes.data.result;
+              }
+            } catch (err) {
+              console.log('Own employee record resolution skipped:', err.message);
+            }
+          }
+
+          const res = await axios.get(`${API_BASE_URL}employee/list?items=100`, getAuthHeaders());
+          let list = [];
+          if (res.data?.success && Array.isArray(res.data?.result)) {
+            list = res.data.result;
+          }
+
+          if (ownRecord && !list.some((e) => e._id === ownRecord._id)) {
+            list.unshift(ownRecord);
+          }
+
+          setEmployeeList(list);
+          if (list.length > 0) {
+            setSelectedEmpId(list[0]._id);
+            setEmployeeRecord(list[0]);
+          } else if (ownRecord) {
+            setSelectedEmpId(ownRecord._id);
+            setEmployeeRecord(ownRecord);
+          }
+        } else {
           // Employee: fetch own record by user._id or employeeId
           const identifier = currentAdmin?._id || currentAdmin?.employeeId;
           if (identifier) {
@@ -53,7 +88,7 @@ export default function Documents() {
                 setSelectedEmpId(res.data.result._id);
               }
             } catch (err) {
-              console.log('No existing employee master linked yet, using user account as fallback');
+              console.log('Employee read fallback:', err.message);
               // Fallback employee object
               const fallback = {
                 _id: currentAdmin._id,
@@ -65,17 +100,6 @@ export default function Documents() {
               setSelectedEmpId(currentAdmin._id);
             }
           }
-        } else {
-          // Privileged (Admin / HR / Management): fetch all employees
-          const res = await axios.get(`${API_BASE_URL}employee/list?items=100`, getAuthHeaders());
-          if (res.data.success && res.data.result) {
-            const list = res.data.result;
-            setEmployeeList(list);
-            if (list.length > 0) {
-              setSelectedEmpId(list[0]._id);
-              setEmployeeRecord(list[0]);
-            }
-          }
         }
       } catch (e) {
         console.error('Failed to initialize document portal:', e);
@@ -85,7 +109,7 @@ export default function Documents() {
     };
 
     init();
-  }, [currentAdmin, isEmployee]);
+  }, [currentAdmin, isPrivileged]);
 
   const handleSelectEmployee = (empId) => {
     setSelectedEmpId(empId);

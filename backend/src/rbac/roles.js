@@ -24,8 +24,17 @@ const normalizeRole = (role) => {
     return ROLES.ADMIN;
   }
 
-  // 2. HR mappings (HR, HR Manager)
-  if (upper === 'HR' || upper === 'HR_MANAGER') {
+  // 2. HR mappings (HR, HR Manager, HR Executive, Human Resources, etc.)
+  if (
+    upper === 'HR' ||
+    upper === 'HR_MANAGER' ||
+    upper === 'HR MANAGER' ||
+    upper === 'HR EXECUTIVE' ||
+    upper === 'HR_EXECUTIVE' ||
+    upper === 'HUMAN RESOURCES' ||
+    upper === 'HUMAN_RESOURCES' ||
+    upper.startsWith('HR')
+  ) {
     return ROLES.HR;
   }
 
