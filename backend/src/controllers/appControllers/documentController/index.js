@@ -85,8 +85,14 @@ const documentController = {
     }
 
     const user = req.user || req.admin;
-    if (user && normalizeRole(user.role) !== ROLES.ADMIN) {
-      const ownEmployee = await Employee.findOne({ user: user._id, removed: false });
+    const userRole = user ? normalizeRole(user.role) : '';
+    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+
+    if (user && !isPrivileged) {
+      const ownEmployee = await Employee.findOne({
+        $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+        removed: false,
+      });
       if (!ownEmployee) {
         if (req.file && fs.existsSync(req.file.path)) {
           try { fs.unlinkSync(req.file.path); } catch (e) {}
@@ -103,6 +109,16 @@ const documentController = {
     }
     const uploadedByName = user ? `${user.name || ''} ${user.surname || ''}`.trim() : 'System';
 
+    // Read binary file data into Buffer for persistent storage across serverless/cloud instances
+    let fileBuffer = null;
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fileBuffer = fs.readFileSync(req.file.path);
+      } catch (err) {
+        console.warn('Document buffer read warning:', err.message);
+      }
+    }
+
     const docData = {
       employee: empRecord._id,
       employeeId: empRecord.employeeId,
@@ -114,12 +130,13 @@ const documentController = {
         path: req.file.path.replace(/\\/g, '/'),
         mimeType: req.file.mimetype,
         size: req.file.size,
+        data: fileBuffer,
       },
       issueDate: issueDate ? new Date(issueDate) : null,
       expiryDate: expiryDate ? new Date(expiryDate) : null,
       remarks: remarks || '',
       verificationStatus: 'Pending',
-      uploadedBy: user ? user._id : empRecord.user,
+      uploadedBy: user ? user._id : empRecord.user || empRecord._id,
       uploadedByName,
       uploadedAt: Date.now(),
     };
@@ -189,21 +206,12 @@ const documentController = {
       });
     }
 
-    const doc = await Document.findOne({ _id: id, removed: false });
-    if (!doc || !doc.file || !doc.file.path) {
+    const doc = await Document.findOne({ _id: id, removed: false }).select('+file.data');
+    if (!doc || !doc.file) {
       return res.status(404).json({
         success: false,
         result: null,
         message: 'Document file not found.',
-      });
-    }
-
-    const filePath = path.resolve(doc.file.path);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        result: null,
-        message: 'Storage file was moved or is missing from disk.',
       });
     }
 
@@ -214,7 +222,30 @@ const documentController = {
     );
     res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
 
-    const fileStream = fs.createReadStream(filePath);
+    // 1. Serve directly from MongoDB persistent buffer if available
+    if (doc.file.data && doc.file.data.length > 0) {
+      return res.send(doc.file.data);
+    }
+
+    // 2. Candidate filesystem search for local or pre-existing seed files
+    const candidates = [
+      doc.file.path,
+      doc.file.path ? path.resolve(doc.file.path) : null,
+      doc.file.fileName ? path.resolve('src/storage/vault', doc.file.fileName) : null,
+      doc.file.fileName ? path.resolve('backend/src/storage/vault', doc.file.fileName) : null,
+      doc.file.fileName ? path.join('/tmp/storage/vault', doc.file.fileName) : null,
+    ].filter(Boolean);
+
+    const foundPath = candidates.find((p) => fs.existsSync(p));
+    if (!foundPath) {
+      return res.status(404).json({
+        success: false,
+        result: null,
+        message: 'Storage file content is not available.',
+      });
+    }
+
+    const fileStream = fs.createReadStream(foundPath);
     return fileStream.pipe(res);
   },
 
@@ -373,8 +404,23 @@ const documentController = {
 
     const filterConditions = { removed: false };
 
-    // Employee filter
-    if (employee && employee !== 'all') {
+    const user = req.user || req.admin;
+    const userRole = user ? normalizeRole(user.role) : '';
+    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+
+    if (!isPrivileged && user) {
+      const Employee = mongoose.model('Employee');
+      const ownEmp = await Employee.findOne({
+        $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+        removed: false,
+      });
+      const orClauses = [{ uploadedBy: user._id }];
+      if (ownEmp) {
+        orClauses.push({ employee: ownEmp._id });
+        if (ownEmp.employeeId) orClauses.push({ employeeId: ownEmp.employeeId });
+      }
+      filterConditions.$or = orClauses;
+    } else if (employee && employee !== 'all') {
       if (mongoose.Types.ObjectId.isValid(employee)) {
         filterConditions.employee = employee;
       } else {
@@ -473,8 +519,25 @@ const documentController = {
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+    const user = req.user || req.admin;
+    const userRole = user ? normalizeRole(user.role) : '';
+    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+
     const matchConditions = { removed: false };
-    if (req.query.employee && req.query.employee !== 'all') {
+
+    if (!isPrivileged && user) {
+      const Employee = mongoose.model('Employee');
+      const ownEmp = await Employee.findOne({
+        $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+        removed: false,
+      });
+      const orClauses = [{ uploadedBy: user._id }];
+      if (ownEmp) {
+        orClauses.push({ employee: ownEmp._id });
+        if (ownEmp.employeeId) orClauses.push({ employeeId: ownEmp.employeeId });
+      }
+      matchConditions.$or = orClauses;
+    } else if (req.query.employee && req.query.employee !== 'all') {
       if (mongoose.Types.ObjectId.isValid(req.query.employee)) {
         matchConditions.employee = new mongoose.Types.ObjectId(req.query.employee);
       }

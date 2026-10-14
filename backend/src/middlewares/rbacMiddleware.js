@@ -91,66 +91,89 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
     }
 
     // 2. Resource-Level Ownership & Confidentiality Enforcement for Private Document Vault
-    // Invariant: Private employee documents are accessible ONLY to the owning employee and ADMIN.
-    // HR and other employees are strictly denied unless proven owner.
+    // Invariant: Private employee documents are accessible to:
+    // - ADMIN and HR (full enterprise visibility for HR compliance & management)
+    // - The owning employee or the user who uploaded the document
     if (resource === 'document') {
-      if (action === 'read' || action === 'download') {
-        if (targetId) {
-          if (!mongoose.Types.ObjectId.isValid(targetId)) {
-            return res.status(400).json({
-              success: false,
-              result: null,
-              message: 'Invalid document id.',
-            });
-          }
-          const DocumentModel = mongoose.model('Document');
-          const EmployeeModel = mongoose.model('Employee');
-          const docRecord = await DocumentModel.findOne({ _id: targetId, removed: false }).populate('employee');
-          if (docRecord) {
-            const ownEmp = await EmployeeModel.findOne({ user: user._id, removed: false });
-            const ownEmpId = ownEmp ? ownEmp._id.toString() : '';
-            const empUser = docRecord.employee?.user ? docRecord.employee.user.toString() : '';
-            const empId = docRecord.employee?._id ? docRecord.employee._id.toString() : '';
-            const isOwner =
-              empUser === userIdStr ||
-              empId === userIdStr ||
-              (ownEmpId && empId === ownEmpId) ||
-              (docRecord.uploadedBy && docRecord.uploadedBy.toString() === userIdStr);
-            if (!isOwner) {
-              return res.status(403).json({
+      const isPrivileged = role === ROLES.ADMIN || role === ROLES.HR;
+
+      if (!isPrivileged) {
+        if (action === 'read' || action === 'download') {
+          if (targetId) {
+            if (!mongoose.Types.ObjectId.isValid(targetId)) {
+              return res.status(400).json({
                 success: false,
                 result: null,
-                message: "Access denied: You cannot access another employee's confidential documents.",
+                message: 'Invalid document id.',
               });
+            }
+            const DocumentModel = mongoose.model('Document');
+            const EmployeeModel = mongoose.model('Employee');
+            const docRecord = await DocumentModel.findOne({ _id: targetId, removed: false }).populate('employee');
+            if (docRecord) {
+              const ownEmp = await EmployeeModel.findOne({
+                $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+                removed: false,
+              });
+              const ownEmpId = ownEmp ? ownEmp._id.toString() : '';
+              const empUser = docRecord.employee?.user ? docRecord.employee.user.toString() : '';
+              const empId = docRecord.employee?._id
+                ? docRecord.employee._id.toString()
+                : docRecord.employee
+                ? docRecord.employee.toString()
+                : '';
+              const empEmail = docRecord.employee?.email ? docRecord.employee.email.toLowerCase() : '';
+              const uploaderId = docRecord.uploadedBy ? docRecord.uploadedBy.toString() : '';
+
+              const isOwner =
+                empUser === userIdStr ||
+                empId === userIdStr ||
+                (ownEmpId && empId === ownEmpId) ||
+                (empEmail && user.email && empEmail === user.email.toLowerCase()) ||
+                uploaderId === userIdStr;
+
+              if (!isOwner) {
+                return res.status(403).json({
+                  success: false,
+                  result: null,
+                  message: "Access denied: You cannot access another employee's confidential documents.",
+                });
+              }
             }
           }
         }
-      }
-      if (action === 'list' || action === 'listAll' || action === 'filter' || action === 'search' || action === 'summary') {
-        const EmployeeModel = mongoose.model('Employee');
-        const empDoc = await EmployeeModel.findOne({ user: user._id, removed: false });
-        if (empDoc) {
-          req.query.employee = empDoc._id.toString();
-        } else {
-          req.query.employee = user._id.toString();
+        if (action === 'list' || action === 'listAll' || action === 'filter' || action === 'search' || action === 'summary') {
+          const EmployeeModel = mongoose.model('Employee');
+          const empDoc = await EmployeeModel.findOne({
+            $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+            removed: false,
+          });
+          if (empDoc) {
+            req.query.employee = empDoc._id.toString();
+          } else {
+            req.query.employee = user._id.toString();
+          }
         }
-      }
-      if (action === 'create') {
-        const EmployeeModel = mongoose.model('Employee');
-        const empDoc = await EmployeeModel.findOne({ user: user._id, removed: false });
-        if (empDoc) {
-          req.body.employee = empDoc._id.toString();
-        } else {
-          req.body.employee = user._id.toString();
+        if (action === 'create') {
+          const EmployeeModel = mongoose.model('Employee');
+          const empDoc = await EmployeeModel.findOne({
+            $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+            removed: false,
+          });
+          if (empDoc) {
+            req.body.employee = empDoc._id.toString();
+          } else {
+            req.body.employee = user._id.toString();
+          }
+          req.body.uploadedBy = user._id.toString();
         }
-        req.body.uploadedBy = user._id.toString();
-      }
-      if (action === 'update' || action === 'delete' || action === 'verify') {
-        return res.status(403).json({
-          success: false,
-          result: null,
-          message: 'Access denied: Only administrators can update, verify, or delete official private documents.',
-        });
+        if (action === 'update' || action === 'delete' || action === 'verify') {
+          return res.status(403).json({
+            success: false,
+            result: null,
+            message: 'Access denied: Only administrators and HR can update, verify, or delete official private documents.',
+          });
+        }
       }
     }
 

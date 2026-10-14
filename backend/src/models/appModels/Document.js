@@ -63,6 +63,7 @@ const schema = new mongoose.Schema(
       path: { type: String, required: true },
       mimeType: { type: String, required: true },
       size: { type: Number, required: true }, // in bytes
+      data: { type: Buffer, select: false }, // Persisted binary file data in database
     },
 
     // Validity / Lifecycle
