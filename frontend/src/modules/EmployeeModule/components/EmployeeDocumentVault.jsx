@@ -206,7 +206,19 @@ export default function EmployeeDocumentVault({ employeeId, employeeRecord }) {
       }
       setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (err) {
-      message.error('Failed to download document. Access may be restricted.');
+      let errorMsg = 'Failed to download document.';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          if (parsed.message) errorMsg = parsed.message;
+        } catch (e) {
+          errorMsg = 'Failed to load document file from server.';
+        }
+      } else if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      }
+      message.error(errorMsg);
     }
   };
 

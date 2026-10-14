@@ -85,7 +85,11 @@ const ensureDbConnection = async (req, res, next) => {
   try {
     isConnecting = mongoose.connect(dbUri, {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 8000,
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      socketTimeoutMS: 45000,
+      family: 4,
     });
     await isConnecting;
     isConnecting = null;
@@ -121,10 +125,26 @@ const githubController = require('./controllers/appControllers/githubController'
 app.post('/api/github/webhook', githubController.handleWebhook);
 
 // Health check for load balancers, Vercel proxy, and uptime monitors
-app.get(['/health', '/api/health'], (req, res) => {
+app.get(['/health', '/api/health'], async (req, res) => {
+  let dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  if (mongoose.connection.readyState === 0 && process.env.DATABASE) {
+    try {
+      await mongoose.connect(process.env.DATABASE, {
+        bufferCommands: false,
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 10,
+        minPoolSize: 1,
+        family: 4,
+      });
+      dbStatus = 'connected';
+    } catch (e) {
+      dbStatus = 'connecting-failed';
+    }
+  }
   res.status(200).json({
     status: 'healthy',
     service: 'TecMotiv-ERP-API',
+    database: dbStatus,
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
   });
