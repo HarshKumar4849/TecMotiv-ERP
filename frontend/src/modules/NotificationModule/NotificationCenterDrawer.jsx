@@ -240,7 +240,7 @@ export default function NotificationCenterDrawer({ visible, onClose, onRefreshCo
         width={420}
         onClose={onClose}
         open={visible}
-        bodyStyle={{ padding: '12px 16px' }}
+        styles={{ body: { padding: '12px 16px' } }}
       >
         {/* Action Controls Bar */}
         <div
