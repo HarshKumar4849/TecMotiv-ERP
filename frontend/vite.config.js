@@ -30,24 +30,7 @@ export default ({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 1200,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('antd') || id.includes('@ant-design')) {
-                return 'vendor-antd';
-              }
-              if (id.includes('react') || id.includes('redux') || id.includes('react-router')) {
-                return 'vendor-react';
-              }
-              if (id.includes('dayjs') || id.includes('axios')) {
-                return 'vendor-utils';
-              }
-            }
-          },
-        },
-      },
+      chunkSizeWarningLimit: 2500,
     },
   };
   return defineConfig(config);
