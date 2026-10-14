@@ -4,6 +4,10 @@ const { isActionAllowed } = require('../rbac/permissions');
 
 const rbacMiddleware = (resource, action) => async (req, res, next) => {
   try {
+    req.body = req.body || {};
+    req.query = req.query || {};
+    req.params = req.params || {};
+
     const user = req.user || req.admin;
 
     if (!user) {
@@ -14,7 +18,7 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
       });
     }
 
-    const role = normalizeRole(user.role);
+    const role = normalizeRole(user.role || (user.department === 'HR' ? 'HR' : ''));
     req.userRole = role;
 
     const targetId = req.params.id;
@@ -156,28 +160,15 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
         }
         if (action === 'create') {
           const EmployeeModel = mongoose.model('Employee');
-          let empDoc = await EmployeeModel.findOne({
+          const empDoc = await EmployeeModel.findOne({
             $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
             removed: false,
           });
-          if (!empDoc) {
-            const empCode = user.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
-            empDoc = new EmployeeModel({
-              employeeId: empCode,
-              name: user.name || 'Employee',
-              surname: user.surname || '',
-              email: user.email,
-              departmentName: user.department || 'General',
-              status: 'Active',
-              user: user._id,
-            });
-            await empDoc.save();
-            if (!user.employeeId) {
-              user.employeeId = empCode;
-              await user.save();
-            }
+          if (empDoc) {
+            req.body.employee = empDoc._id.toString();
+          } else {
+            req.body.employee = user._id.toString();
           }
-          req.body.employee = empDoc._id.toString();
           req.body.uploadedBy = user._id.toString();
         }
         if (action === 'update' || action === 'delete' || action === 'verify') {
