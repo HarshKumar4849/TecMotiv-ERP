@@ -237,7 +237,7 @@ export default function NotificationCenterDrawer({ visible, onClose, onRefreshCo
           </div>
         }
         placement="right"
-        width={420}
+        width={typeof window !== 'undefined' && window.innerWidth < 450 ? '100%' : 420}
         onClose={onClose}
         open={visible}
         styles={{ body: { padding: '12px 16px' } }}

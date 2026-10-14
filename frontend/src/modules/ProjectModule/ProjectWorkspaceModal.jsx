@@ -185,7 +185,7 @@ export default function ProjectWorkspaceModal({ visible, onClose, project, onRef
         </Space>
       }
       placement="right"
-      width={880}
+      width={typeof window !== 'undefined' && window.innerWidth < 880 ? '100%' : 880}
       open={visible}
       onClose={onClose}
       destroyOnClose
@@ -290,6 +290,7 @@ export default function ProjectWorkspaceModal({ visible, onClose, project, onRef
                   dataSource={liveTasks}
                   rowKey="_id"
                   pagination={false}
+                  scroll={{ x: 600 }}
                   columns={[
                     {
                       title: 'Task Title',

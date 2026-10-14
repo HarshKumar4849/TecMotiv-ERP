@@ -280,6 +280,8 @@ export default function CalendarView({
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '12px 0 16px',
+                  flexWrap: 'wrap',
+                  gap: 8,
                 }}
               >
                 <Title level={4} style={{ margin: 0 }}>

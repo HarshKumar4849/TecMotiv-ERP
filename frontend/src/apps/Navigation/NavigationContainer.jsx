@@ -41,7 +41,7 @@ export default function Navigation() {
   return isMobile ? <MobileSidebar /> : <Sidebar collapsible={false} />;
 }
 
-function Sidebar({ collapsible, isMobile = false }) {
+function Sidebar({ collapsible, isMobile = false, onNavigate }) {
   let location = useLocation();
 
   const { state: stateApp, appContextAction } = useAppContext();
@@ -56,56 +56,67 @@ function Sidebar({ collapsible, isMobile = false }) {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const userRole = currentAdmin?.role || 'EMPLOYEE';
 
+  const handleItemClick = (path, isExternal = false, externalUrl = null) => {
+    if (onNavigate) {
+      onNavigate();
+    }
+    if (isExternal && externalUrl) {
+      window.location.href = externalUrl;
+    } else if (path) {
+      navigate(path);
+    }
+  };
+
   const items = [
     {
       key: 'dashboard',
       icon: <DashboardOutlined />,
-      label: <Link to={'/'}>{translate('Dashboard')}</Link>,
+      label: <Link to={'/'} onClick={() => onNavigate && onNavigate()}>{translate('Dashboard')}</Link>,
     },
     {
       key: 'employees',
       icon: <TeamOutlined />,
-      label: <Link to={'/employees'}>{translate('Employees')}</Link>,
+      label: <Link to={'/employees'} onClick={() => onNavigate && onNavigate()}>{translate('Employees')}</Link>,
     },
     {
       key: 'attendance',
       icon: <ClockCircleOutlined />,
-      label: <Link to={'/attendance'}>{translate('Attendance')}</Link>,
+      label: <Link to={'/attendance'} onClick={() => onNavigate && onNavigate()}>{translate('Attendance')}</Link>,
     },
     {
       key: 'leave',
       icon: <CoffeeOutlined />,
-      label: <Link to={'/leave'}>{translate('Leave')}</Link>,
+      label: <Link to={'/leave'} onClick={() => onNavigate && onNavigate()}>{translate('Leave')}</Link>,
     },
     {
       key: 'tasks',
       icon: <CheckSquareOutlined />,
-      label: <Link to={'/tasks'}>{translate('Tasks')}</Link>,
+      label: <Link to={'/tasks'} onClick={() => onNavigate && onNavigate()}>{translate('Tasks')}</Link>,
     },
     {
       key: 'projects',
       icon: <ProjectOutlined />,
-      label: <Link to={'/projects'}>{translate('Projects')}</Link>,
+      label: <Link to={'/projects'} onClick={() => onNavigate && onNavigate()}>{translate('Projects')}</Link>,
     },
     {
       key: 'payroll',
       icon: <DollarOutlined />,
-      label: <Link to={'/payroll'}>{translate('Payroll')}</Link>,
+      label: <Link to={'/payroll'} onClick={() => onNavigate && onNavigate()}>{translate('Payroll')}</Link>,
     },
     {
       key: 'documents',
       icon: <FileProtectOutlined />,
-      label: <Link to={'/documents'}>{translate('Document Vault')}</Link>,
+      label: <Link to={'/documents'} onClick={() => onNavigate && onNavigate()}>{translate('Document Vault')}</Link>,
     },
     {
       key: 'calendar',
       icon: <CalendarOutlined />,
-      label: <Link to={'/calendar'}>{translate('Calendar')}</Link>,
+      label: <Link to={'/calendar'} onClick={() => onNavigate && onNavigate()}>{translate('Calendar')}</Link>,
     },
     {
       key: 'events',
       icon: <GiftOutlined />,
-      label: <Link to={'/events'}>{translate('Events & Celebrations')}</Link>,
+      label: <Link to={'/events'} onClick={() => onNavigate && onNavigate()}>{translate('Events & Celebrations')}</Link>,
     },
     {
       key: 'recognition',
@@ -116,38 +127,39 @@ function Sidebar({ collapsible, isMobile = false }) {
         </a>
       ),
       onClick: () => {
+        if (onNavigate) onNavigate();
         window.location.href = SHOUTOUT_URL;
       },
     },
     {
       key: 'bulletin',
       icon: <NotificationOutlined />,
-      label: <Link to={'/bulletin'}>{translate('Bulletin / News')}</Link>,
+      label: <Link to={'/bulletin'} onClick={() => onNavigate && onNavigate()}>{translate('Bulletin / News')}</Link>,
     },
     {
       key: 'policies',
       icon: <FileProtectOutlined />,
-      label: <Link to={'/policies'}>{translate('Policies')}</Link>,
+      label: <Link to={'/policies'} onClick={() => onNavigate && onNavigate()}>{translate('Policies')}</Link>,
     },
     {
       key: 'admin',
       icon: <SafetyCertificateOutlined />,
-      label: <Link to={'/admin'}>{translate('Admin')}</Link>,
+      label: <Link to={'/admin'} onClick={() => onNavigate && onNavigate()}>{translate('Admin')}</Link>,
     },
     {
       key: 'itadmin',
       icon: <CloudOutlined />,
-      label: <Link to={'/it-admin'}>{translate('IT & Digital Admin')}</Link>,
+      label: <Link to={'/it-admin'} onClick={() => onNavigate && onNavigate()}>{translate('IT & Digital Admin')}</Link>,
     },
     {
       key: 'templates',
       icon: <FileTextOutlined />,
-      label: <Link to={'/templates'}>{translate('Templates')}</Link>,
+      label: <Link to={'/templates'} onClick={() => onNavigate && onNavigate()}>{translate('Templates')}</Link>,
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
-      label: <Link to={'/settings'}>{translate('Settings')}</Link>,
+      label: <Link to={'/settings'} onClick={() => onNavigate && onNavigate()}>{translate('Settings')}</Link>,
     },
   ];
 
@@ -157,9 +169,6 @@ function Sidebar({ collapsible, isMobile = false }) {
       if (path === '' || path === '/') {
         setCurrentPath('dashboard');
       } else {
-        // Menu keys are unsegmented (e.g. "itadmin") while URLs can contain
-        // separators (e.g. "/it-admin"). Normalize so the active item is
-        // actually highlighted.
         const primary = path.split('/')[0].replace(/[-_\s]/g, '').toLowerCase();
         setCurrentPath(primary);
       }
@@ -182,6 +191,67 @@ function Sidebar({ collapsible, isMobile = false }) {
     navMenu.collapse();
   };
 
+  if (isMobile) {
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div
+          className="logo"
+          onClick={() => {
+            if (onNavigate) onNavigate();
+            navigate('/');
+          }}
+          style={{
+            cursor: 'pointer',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            margin: 0,
+            borderBottom: '1px solid #f0f0f0',
+          }}
+        >
+          <img src={logoIcon} alt="TecMotiv Logo" style={{ height: '32px' }} />
+          <div style={{ marginLeft: 12, lineHeight: 1.2 }}>
+            <span
+              style={{
+                fontSize: '17px',
+                fontWeight: '800',
+                letterSpacing: '0.3px',
+                color: '#22242a',
+                display: 'block',
+              }}
+            >
+              Tecmotiv
+            </span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                letterSpacing: '0.8px',
+                color: '#0097a7',
+                textTransform: 'uppercase',
+              }}
+            >
+              Solutions ERP
+            </span>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Menu
+            items={items.filter((item) => canAccessModule(userRole, item.key))}
+            mode="inline"
+            theme={'light'}
+            selectedKeys={[currentPath]}
+            style={{
+              width: '100%',
+              borderRight: 0,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Sider
       collapsible={collapsible}
@@ -192,12 +262,11 @@ function Sidebar({ collapsible, isMobile = false }) {
       style={{
         overflow: 'auto',
         height: '100vh',
-        position: isMobile ? 'absolute' : 'relative',
-        bottom: '20px',
-        ...(!isMobile && {
-          left: '20px',
-          top: '20px',
-        }),
+        position: 'sticky',
+        top: 0,
+        left: 0,
+        zIndex: 100,
+        boxShadow: '1px 0 6px rgba(0,21,41,0.06)',
       }}
       theme={'light'}
     >
@@ -255,34 +324,29 @@ function Sidebar({ collapsible, isMobile = false }) {
 }
 
 function MobileSidebar() {
-  const [visible, setVisible] = useState(false);
-  const showDrawer = () => {
-    setVisible(true);
-  };
+  const { state: stateApp, appContextAction } = useAppContext();
+  const { isNavMenuClose } = stateApp;
+  const { navMenu } = appContextAction;
+
+  // In mobile context, menu is open when isNavMenuClose is false
+  const isOpen = !isNavMenuClose;
+
   const onClose = () => {
-    setVisible(false);
+    navMenu.close();
   };
 
   return (
-    <>
-      <Button
-        type="text"
-        size="large"
-        onClick={showDrawer}
-        className="mobile-sidebar-btn"
-        style={{ marginLeft: 25 }}
-      >
-        <MenuOutlined style={{ fontSize: 18 }} />
-      </Button>
-      <Drawer
-        width={250}
-        placement={'left'}
-        closable={false}
-        onClose={onClose}
-        open={visible}
-      >
-        <Sidebar collapsible={false} isMobile={true} />
-      </Drawer>
-    </>
+    <Drawer
+      width={Math.min(280, typeof window !== 'undefined' ? window.innerWidth * 0.85 : 280)}
+      placement={'left'}
+      closable={true}
+      onClose={onClose}
+      open={isOpen}
+      styles={{ body: { padding: 0 } }}
+      maskClosable={true}
+      keyboard={true}
+    >
+      <Sidebar collapsible={false} isMobile={true} onNavigate={onClose} />
+    </Drawer>
   );
 }

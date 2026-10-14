@@ -9,6 +9,7 @@ import {
   SafetyCertificateOutlined,
   ApartmentOutlined,
   BellOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 
 import { selectCurrentAdmin } from '@/redux/auth/selectors';
@@ -17,10 +18,18 @@ import useLanguage from '@/locale/useLanguage';
 import { canAccessModule, normalizeRole, ROLES } from '@/utils/rbac';
 import { request } from '@/request';
 import { NotificationCenterDrawer } from '@/modules/NotificationModule';
+import { useAppContext } from '@/context/appContext';
+import useResponsive from '@/hooks/useResponsive';
+import logoIcon from '@/style/images/logo-icon.svg';
 
 export default function HeaderContent() {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const { Header } = Layout;
+  const navigate = useNavigate();
+
+  const { isMobile } = useResponsive();
+  const { appContextAction } = useAppContext();
+  const { navMenu } = appContextAction;
 
   const translate = useLanguage();
   const rawRole = currentAdmin?.role || 'EMPLOYEE';
@@ -59,7 +68,6 @@ export default function HeaderContent() {
   };
 
   const ProfileDropdown = () => {
-    const navigate = useNavigate();
     return (
       <div className="profileDropdown" onClick={() => navigate('/profile')}>
         <Avatar
@@ -136,77 +144,111 @@ export default function HeaderContent() {
   return (
     <Header
       style={{
-        padding: '16px 28px',
+        padding: isMobile ? '10px 16px' : '14px 28px',
         background: '#ffffff',
         display: 'flex',
-        flexDirection: 'row-reverse',
-        justifyContent: 'flex-start',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        gap: '16px',
         borderBottom: '1px solid #f0f0f0',
+        position: 'sticky',
+        top: 0,
+        zIndex: 99,
+        boxShadow: '0 1px 4px rgba(0,21,41,0.04)',
       }}
     >
-      <Dropdown
-        menu={{
-          items,
-        }}
-        trigger={['click']}
-        placement="bottomRight"
-        style={{ width: '280px', float: 'right' }}
-      >
-        <Avatar
-          className="last"
-          src={currentAdmin?.photo ? FILE_BASE_URL + currentAdmin?.photo : undefined}
-          style={{
-            color: '#1677ff',
-            backgroundColor: currentAdmin?.photo ? 'none' : '#e6f4ff',
-            boxShadow: 'rgba(22, 119, 255, 0.2) 0px 0px 8px 1px',
-            cursor: 'pointer',
-          }}
-          size="large"
-        >
-          {currentAdmin?.name?.charAt(0)?.toUpperCase()}
-        </Avatar>
-      </Dropdown>
-
-      {/* Notification Center Trigger Bell */}
-      <Tooltip title="Notifications">
-        <Badge count={unreadCount} overflowCount={99} size="small" offset={[-4, 4]}>
+      {/* Left side: Hamburger button + Branding on mobile, Organization Title on Desktop */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {isMobile && (
           <Button
             type="text"
             shape="circle"
-            icon={<BellOutlined style={{ fontSize: 20, color: '#595959' }} />}
-            onClick={() => setIsNotificationDrawerOpen(true)}
-            style={{
-              width: 40,
-              height: 40,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: unreadCount > 0 ? '#f0f7ff' : 'transparent',
-              border: unreadCount > 0 ? '1px solid #bae0ff' : 'none',
-            }}
+            size="large"
+            icon={<MenuOutlined style={{ fontSize: 18, color: '#002244' }} />}
+            onClick={() => navMenu.open()}
+            aria-label="Open navigation menu"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           />
-        </Badge>
-      </Tooltip>
-
-      <Space size={8}>
-        {currentAdmin?.department && (
-          <Tag
-            icon={<ApartmentOutlined />}
-            color="default"
-            style={{ borderRadius: 12, padding: '2px 10px', fontSize: 12 }}
-          >
-            {currentAdmin.department}
-          </Tag>
         )}
-        <Tag
-          color={getRoleColor(role)}
-          style={{ borderRadius: 12, padding: '2px 10px', fontWeight: 600, fontSize: 12 }}
+        {isMobile ? (
+          <div
+            onClick={() => navigate('/')}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            <img src={logoIcon} alt="TecMotiv" style={{ height: 26 }} />
+            <span style={{ fontWeight: 800, fontSize: 16, color: '#002244', letterSpacing: '0.2px' }}>
+              Tecmotiv
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 700, fontSize: 16, color: '#002244' }}>
+              TecMotiv Solutions • Enterprise ERP
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Right side: Role/Dept, Notification Bell, User Avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14 }}>
+        <Space size={6} wrap={false} style={{ display: 'flex', alignItems: 'center' }}>
+          {!isMobile && currentAdmin?.department && (
+            <Tag
+              icon={<ApartmentOutlined />}
+              color="default"
+              style={{ borderRadius: 12, padding: '2px 8px', fontSize: 11, margin: 0 }}
+            >
+              {currentAdmin.department}
+            </Tag>
+          )}
+          <Tag
+            color={getRoleColor(role)}
+            style={{ borderRadius: 12, padding: '2px 8px', fontWeight: 600, fontSize: 11, margin: 0 }}
+          >
+            {normalizeRole(role)}
+          </Tag>
+        </Space>
+
+        {/* Notification Center Trigger Bell */}
+        <Tooltip title="Notifications">
+          <Badge count={unreadCount} overflowCount={99} size="small" offset={[-4, 4]}>
+            <Button
+              type="text"
+              shape="circle"
+              icon={<BellOutlined style={{ fontSize: 18, color: '#595959' }} />}
+              onClick={() => setIsNotificationDrawerOpen(true)}
+              style={{
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: unreadCount > 0 ? '#f0f7ff' : 'transparent',
+                border: unreadCount > 0 ? '1px solid #bae0ff' : 'none',
+              }}
+            />
+          </Badge>
+        </Tooltip>
+
+        <Dropdown
+          menu={{ items }}
+          trigger={['click']}
+          placement="bottomRight"
         >
-          {normalizeRole(role)}
-        </Tag>
-      </Space>
+          <Avatar
+            className="last"
+            src={currentAdmin?.photo ? FILE_BASE_URL + currentAdmin?.photo : undefined}
+            style={{
+              color: '#1677ff',
+              backgroundColor: currentAdmin?.photo ? 'none' : '#e6f4ff',
+              boxShadow: 'rgba(22, 119, 255, 0.2) 0px 0px 6px 1px',
+              cursor: 'pointer',
+            }}
+            size={isMobile ? 'default' : 'large'}
+          >
+            {currentAdmin?.name?.charAt(0)?.toUpperCase()}
+          </Avatar>
+        </Dropdown>
+      </div>
 
       {/* Notification Center Slide-Out Drawer */}
       <NotificationCenterDrawer
