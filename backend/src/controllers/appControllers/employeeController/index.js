@@ -6,6 +6,108 @@ const isEmployeeRole = (req) => {
   return normalizeRole ? normalizeRole(role) === ROLES.EMPLOYEE : (role === 'EMPLOYEE' || role === 'employee');
 };
 
+const resolveOrCreateEmployee = async (userDoc) => {
+  if (!userDoc) return null;
+  const Employee = mongoose.model('Employee');
+  const userId = userDoc._id;
+  const userEmail = (userDoc.email || '').toLowerCase().trim();
+  const userEmpId = (userDoc.employeeId || '').toUpperCase().trim();
+
+  // 1. Broadly search for any existing Employee document across all matching criteria
+  const orClauses = [];
+  if (userId) orClauses.push({ user: userId });
+  if (userEmail) {
+    orClauses.push({ email: userEmail });
+    orClauses.push({ personalEmail: userEmail });
+  }
+  if (userEmpId) {
+    orClauses.push({ employeeId: userEmpId });
+  }
+
+  let emp = orClauses.length > 0 ? await Employee.findOne({ $or: orClauses }) : null;
+
+  if (emp) {
+    let changed = false;
+    if (emp.removed) {
+      emp.removed = false;
+      changed = true;
+    }
+    if (userId && (!emp.user || emp.user.toString() !== userId.toString())) {
+      emp.user = userId;
+      changed = true;
+    }
+    if (!emp.name && userDoc.name) {
+      emp.name = userDoc.name;
+      changed = true;
+    }
+    if (!emp.surname && userDoc.surname) {
+      emp.surname = userDoc.surname;
+      changed = true;
+    }
+    if (changed) {
+      await emp.save();
+    }
+    return emp;
+  }
+
+  // 2. Generate guaranteed collision-free employeeId
+  let candidateEmpId = userEmpId;
+  if (!candidateEmpId) {
+    for (let attempts = 0; attempts < 30; attempts++) {
+      const randNum = Math.floor(1000 + Math.random() * 9000);
+      const testId = `TM-${randNum}`;
+      const exists = await Employee.findOne({ employeeId: testId });
+      if (!exists) {
+        candidateEmpId = testId;
+        break;
+      }
+    }
+    if (!candidateEmpId) candidateEmpId = `TM-${Date.now().toString().slice(-4)}`;
+  }
+
+  const role = normalizeRole ? normalizeRole(userDoc.role || (userDoc.department === 'HR' ? 'HR' : '')) : userDoc.role;
+  const newEmp = new Employee({
+    employeeId: candidateEmpId,
+    name: userDoc.name || 'Employee',
+    surname: userDoc.surname || '',
+    email: userEmail || `emp-${Date.now()}@tecmotiv.local`,
+    departmentName: userDoc.department || 'General',
+    designationName: userDoc.designation || (role === ROLES.HR ? 'HR Specialist' : 'Staff'),
+    status: 'Active',
+    user: userId,
+    removed: false,
+    enabled: true,
+  });
+
+  try {
+    await newEmp.save();
+    if (userDoc.save && !userDoc.employeeId) {
+      try {
+        userDoc.employeeId = candidateEmpId;
+        await userDoc.save();
+      } catch (e) {}
+    }
+    return newEmp;
+  } catch (err) {
+    if (err.code === 11000) {
+      const existing = await Employee.findOne({
+        $or: [
+          ...(userEmail ? [{ email: userEmail }] : []),
+          { employeeId: candidateEmpId },
+          ...(userId ? [{ user: userId }] : []),
+        ],
+      });
+      if (existing) {
+        if (userId) existing.user = userId;
+        existing.removed = false;
+        await existing.save();
+        return existing;
+      }
+    }
+    throw err;
+  }
+};
+
 // Helper to normalize array fields (skills, qualifications, etc.)
 const normalizeArray = (val) => {
   if (!val) return [];
@@ -244,24 +346,7 @@ const employeeController = {
       }
 
       if (adminUser) {
-        // Auto-create/link the missing Employee profile for this Admin account
-        const empCode = adminUser.employeeId || `TM-${Math.floor(1000 + Math.random() * 9000)}`;
-        const userRole = normalizeRole ? normalizeRole(adminUser.role || (adminUser.department === 'HR' ? 'HR' : '')) : adminUser.role;
-        result = new Employee({
-          employeeId: empCode,
-          name: adminUser.name || 'Employee',
-          surname: adminUser.surname || '',
-          email: adminUser.email,
-          departmentName: adminUser.department || 'General',
-          designationName: adminUser.designation || (userRole === ROLES.HR ? 'HR Specialist' : 'Staff'),
-          status: 'Active',
-          user: adminUser._id,
-        });
-        await result.save();
-        if (!adminUser.employeeId) {
-          adminUser.employeeId = empCode;
-          await adminUser.save();
-        }
+        result = await resolveOrCreateEmployee(adminUser);
       }
     }
 
