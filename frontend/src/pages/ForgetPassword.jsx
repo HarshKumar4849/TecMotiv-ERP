@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 import { Form, Result, Button, Typography } from 'antd';
@@ -15,6 +16,7 @@ const { Text } = Typography;
 
 const ForgetPassword = () => {
   const translate = useLanguage();
+  const [requestedEmail, setRequestedEmail] = useState('');
 
   const navigate = useNavigate();
 
@@ -25,6 +27,7 @@ const ForgetPassword = () => {
   }
 
   const onFinish = (values) => {
+    if (values?.email) setRequestedEmail(values.email);
     const callback = postData(values);
     onFetch(callback);
   };
@@ -63,7 +66,7 @@ const ForgetPassword = () => {
       <Result
         status="success"
         title={translate('Check your email address to reset your password')}
-        subTitle={translate('A password reset link has been dispatched to your email address.')}
+        subTitle={translate('A password reset link and verification code have been dispatched to your email address.')}
         style={{ maxWidth: '450px', margin: 'auto' }}
         extra={
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -71,10 +74,12 @@ const ForgetPassword = () => {
               type="primary"
               size="large"
               onClick={() => {
-                navigate(`/resetpassword`);
+                navigate(`/resetpassword?email=${encodeURIComponent(requestedEmail)}`, {
+                  state: { email: requestedEmail },
+                });
               }}
             >
-              {translate('Proceed to Reset Password')}
+              {translate('Enter Verification Code & Set New Password')}
             </Button>
             <Button
               onClick={() => {

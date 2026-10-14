@@ -34,13 +34,14 @@ const forgetPassword = async (req, res, { userModel }) => {
 
   const normalizedEmail = email.trim().toLowerCase();
   const user = await User.findOne({ email: normalizedEmail, removed: false });
-  if (user?.enabled) {
+  if (user) {
     const rawToken = (await randomBytes(32)).toString('hex');
     const resetToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     const updated = await UserPassword.findOneAndUpdate(
       { user: user._id, removed: false },
-      { $set: { resetToken, resetTokenExpires: expiresAt } },
+      { $set: { resetToken, resetTokenExpires: expiresAt, emailOtp: resetOtp, emailOtpExpires: expiresAt } },
       { new: true }
     ).exec();
     if (updated) {
@@ -49,7 +50,10 @@ const forgetPassword = async (req, res, { userModel }) => {
       const idurar_base_url = settings['idurar_base_url'];
       const configuredClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL)?.split(',')[0].trim();
       const originFromHeader = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
-      const url = checkAndCorrectURL(configuredClientUrl || originFromHeader || idurar_base_url || 'http://localhost:3000');
+      const hostFromHeader = req.headers['x-forwarded-host'] || req.headers.host;
+      const protoFromHeader = req.headers['x-forwarded-proto'] || 'https';
+      const forwardedUrl = hostFromHeader ? `${protoFromHeader}://${hostFromHeader}` : null;
+      const url = checkAndCorrectURL(configuredClientUrl || originFromHeader || forwardedUrl || idurar_base_url || 'https://tecmotiv-erp.vercel.app');
       const link = url + '/resetpassword/' + user._id + '/' + rawToken;
 
       try {
@@ -57,6 +61,7 @@ const forgetPassword = async (req, res, { userModel }) => {
           email: normalizedEmail,
           name: user.name,
           link,
+          otp: resetOtp,
           subject: 'Reset your password | TecMotiv ERP',
           idurar_app_email,
           type: 'passwordVerfication',

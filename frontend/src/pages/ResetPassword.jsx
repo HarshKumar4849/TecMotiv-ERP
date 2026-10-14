@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 
 import { resetPassword } from '@/redux/auth/actions';
 import { selectAuth } from '@/redux/auth/selectors';
@@ -17,26 +17,38 @@ const ResetPassword = () => {
   const translate = useLanguage();
   const { isLoading } = useSelector(selectAuth);
   const navigate = useNavigate();
+  const location = useLocation();
   const { userId, resetToken } = useParams();
+
+  const searchParams = new URLSearchParams(location.search);
+  const defaultEmail = location.state?.email || searchParams.get('email') || '';
+  const queryUserId = searchParams.get('userId');
+  const queryResetToken = searchParams.get('token') || searchParams.get('resetToken');
+
+  const activeUserId = userId || queryUserId;
+  const activeResetToken = resetToken || queryResetToken;
+  const hasUrlTokens = Boolean(activeUserId && activeResetToken);
 
   const dispatch = useDispatch();
   const onFinish = async (values) => {
-    const targetUserId = userId || values.userId;
-    const targetResetToken = resetToken || values.resetToken;
+    const targetUserId = activeUserId || values.userId;
+    const targetResetToken = activeResetToken || values.resetToken;
+    const targetEmail = values.email || defaultEmail;
+
+    const payload = {
+      password: values.password,
+    };
+    if (targetUserId) payload.userId = targetUserId;
+    if (targetResetToken) payload.resetToken = targetResetToken;
+    if (targetEmail) payload.email = targetEmail;
 
     const result = await dispatch(
       resetPassword({
-        resetPasswordData: {
-          password: values.password,
-          userId: targetUserId,
-          resetToken: targetResetToken,
-        },
+        resetPasswordData: payload,
       })
     );
     if (result?.success) navigate('/login');
   };
-
-  const hasUrlTokens = Boolean(userId && resetToken);
 
   const FormContainer = () => {
     return (
@@ -45,6 +57,7 @@ const ResetPassword = () => {
           name="signup"
           className="login-form"
           initialValues={{
+            email: defaultEmail,
             remember: true,
           }}
           onFinish={onFinish}
