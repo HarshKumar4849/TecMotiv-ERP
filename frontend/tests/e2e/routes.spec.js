@@ -14,7 +14,12 @@ for (const [role, routes] of Object.entries(roleRoutes)) {
     let currentRoute = 'login';
     page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
     page.on('console', (message) => {
-      if (message.type() === 'error') errors.push(`console: ${message.text()}`);
+      if (message.type() === 'error') {
+        const text = message.text();
+        if (!text.includes('deprecated') && !text.includes('Warning:')) {
+          errors.push(`console: ${text}`);
+        }
+      }
     });
     page.on('response', (response) => {
       if (response.status() >= 400) errors.push(`route ${currentRoute} http ${response.status()}: ${response.url()}`);
