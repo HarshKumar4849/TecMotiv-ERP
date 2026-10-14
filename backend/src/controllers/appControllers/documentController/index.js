@@ -402,7 +402,7 @@ const documentController = {
       sortValue = -1,
     } = req.query;
 
-    const filterConditions = { removed: false };
+    const andConditions = [{ removed: false }];
 
     const user = req.user || req.admin;
     const userRole = user ? normalizeRole(user.role) : '';
@@ -419,26 +419,28 @@ const documentController = {
         orClauses.push({ employee: ownEmp._id });
         if (ownEmp.employeeId) orClauses.push({ employeeId: ownEmp.employeeId });
       }
-      filterConditions.$or = orClauses;
+      andConditions.push({ $or: orClauses });
     } else if (employee && employee !== 'all') {
       if (mongoose.Types.ObjectId.isValid(employee)) {
-        filterConditions.employee = employee;
+        andConditions.push({ employee: employee });
       } else {
-        filterConditions.$or = [
-          { employeeId: new RegExp(`^${employee}$`, 'i') },
-          { employeeName: new RegExp(employee, 'i') },
-        ];
+        andConditions.push({
+          $or: [
+            { employeeId: new RegExp(`^${employee}$`, 'i') },
+            { employeeName: new RegExp(employee, 'i') },
+          ],
+        });
       }
     }
 
     // Document Type filter
     if (documentType && documentType !== 'all') {
-      filterConditions.documentType = documentType;
+      andConditions.push({ documentType });
     }
 
     // Verification Status filter
     if (verificationStatus && verificationStatus !== 'all') {
-      filterConditions.verificationStatus = verificationStatus;
+      andConditions.push({ verificationStatus });
     }
 
     // Expiry Status filter
@@ -446,27 +448,30 @@ const documentController = {
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     if (expiryStatus === 'expired') {
-      filterConditions.expiryDate = { $lt: now };
+      andConditions.push({ expiryDate: { $lt: now } });
     } else if (expiryStatus === 'expiring_soon') {
-      filterConditions.expiryDate = { $gte: now, $lte: thirtyDaysFromNow };
+      andConditions.push({ expiryDate: { $gte: now, $lte: thirtyDaysFromNow } });
     } else if (expiryStatus === 'valid') {
-      filterConditions.$or = [
-        { expiryDate: null },
-        { expiryDate: { $gt: thirtyDaysFromNow } },
-      ];
+      andConditions.push({
+        $or: [{ expiryDate: null }, { expiryDate: { $gt: thirtyDaysFromNow } }],
+      });
     }
 
     // Search query
     if (q && q.trim()) {
       const regex = new RegExp(q.trim(), 'i');
-      filterConditions.$or = [
-        { employeeName: regex },
-        { employeeId: regex },
-        { documentType: regex },
-        { 'file.originalName': regex },
-        { remarks: regex },
-      ];
+      andConditions.push({
+        $or: [
+          { employeeName: regex },
+          { employeeId: regex },
+          { documentType: regex },
+          { 'file.originalName': regex },
+          { remarks: regex },
+        ],
+      });
     }
+
+    const filterConditions = andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
     const sortOrder = parseInt(sortValue) || -1;
     const sortField = sortBy || 'uploadedAt';
@@ -523,7 +528,7 @@ const documentController = {
     const userRole = user ? normalizeRole(user.role) : '';
     const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
 
-    const matchConditions = { removed: false };
+    const andConditions = [{ removed: false }];
 
     if (!isPrivileged && user) {
       const Employee = mongoose.model('Employee');
@@ -536,12 +541,14 @@ const documentController = {
         orClauses.push({ employee: ownEmp._id });
         if (ownEmp.employeeId) orClauses.push({ employeeId: ownEmp.employeeId });
       }
-      matchConditions.$or = orClauses;
+      andConditions.push({ $or: orClauses });
     } else if (req.query.employee && req.query.employee !== 'all') {
       if (mongoose.Types.ObjectId.isValid(req.query.employee)) {
-        matchConditions.employee = new mongoose.Types.ObjectId(req.query.employee);
+        andConditions.push({ employee: new mongoose.Types.ObjectId(req.query.employee) });
       }
     }
+
+    const matchConditions = andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
     const [total, verified, pending, rejected, expired, expiringSoon, typeAggregation] =
       await Promise.all([
