@@ -24,7 +24,7 @@ const successHandler = (response, options = { notifyOnSuccess: false, notifyOnFa
     const { status } = response;
     if (options.notifyOnFailed) {
       notification.config({
-        duration: 4,
+        duration: 3,
         maxCount: 2,
       });
       notification.error({
