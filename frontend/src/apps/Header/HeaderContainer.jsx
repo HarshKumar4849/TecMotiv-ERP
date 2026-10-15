@@ -21,6 +21,7 @@ import { NotificationCenterDrawer } from '@/modules/NotificationModule';
 import { useAppContext } from '@/context/appContext';
 import useResponsive from '@/hooks/useResponsive';
 import logoIcon from '@/style/images/logo-icon.svg';
+import { getSocket } from '@/utils/socket';
 
 export default function HeaderContent() {
   const currentAdmin = useSelector(selectCurrentAdmin);
@@ -51,9 +52,34 @@ export default function HeaderContent() {
 
   useEffect(() => {
     fetchUnreadCount();
+
+    // Setup real-time WebSocket connection
+    const socket = getSocket();
+    if (socket) {
+      const handleUnreadCount = (data) => {
+        if (data && typeof data.count === 'number') {
+          setUnreadCount(data.count);
+        }
+      };
+
+      const handleInitialNotifications = (data) => {
+        if (data && typeof data.unreadCount === 'number') {
+          setUnreadCount(data.unreadCount);
+        }
+      };
+
+      socket.on('unread-count', handleUnreadCount);
+      socket.on('initial-notifications', handleInitialNotifications);
+
+      return () => {
+        socket.off('unread-count', handleUnreadCount);
+        socket.off('initial-notifications', handleInitialNotifications);
+      };
+    }
+
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentAdmin]);
 
   const getRoleColor = (r) => {
     switch (normalizeRole(r)) {
@@ -160,6 +186,7 @@ export default function HeaderContent() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {isMobile && (
           <Button
+            className="mobile-sidebar-btn"
             type="text"
             shape="circle"
             size="large"

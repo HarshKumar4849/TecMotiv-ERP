@@ -630,6 +630,7 @@ export default function OutlookSyncModal({ visible, onClose, onSuccess }) {
                     dataSource={outlookEvents}
                     rowKey="id"
                     pagination={{ pageSize: 5 }}
+                    scroll={{ x: 600 }}
                     columns={[
                       {
                         title: 'Subject / Title',
@@ -690,6 +691,7 @@ export default function OutlookSyncModal({ visible, onClose, onSuccess }) {
                     dataSource={statusData?.recentLogs || []}
                     rowKey={(rec, i) => `${rec.timestamp}-${i}`}
                     pagination={{ pageSize: 6 }}
+                    scroll={{ x: 600 }}
                     columns={[
                       {
                         title: 'Time',

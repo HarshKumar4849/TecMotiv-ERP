@@ -523,6 +523,7 @@ export default function DigitalAdminDashboard({ userRole, currentAdmin }) {
             dataSource={services}
             rowKey="_id"
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 900 }}
           />
         </Card>
       ) : (
