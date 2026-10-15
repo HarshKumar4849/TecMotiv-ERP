@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const qa = require('./qa-env');
 const { seedFixtures, cleanupFixtures, emailFor } = require('./fixtures');
@@ -7,146 +8,113 @@ const { seedFixtures, cleanupFixtures, emailFor } = require('./fixtures');
 let server;
 let fixtures;
 let baseUrl;
+let sentMessages = [];
+let originalSend;
 let AdminPassword;
 
 test.before(async () => {
   fixtures = await seedFixtures();
   AdminPassword = mongoose.model('AdminPassword');
+  const mail = require('../src/handlers/mail');
+  originalSend = mail.send;
+  mail.send = async (message) => {
+    sentMessages.push(message);
+    return { status: 'captured' };
+  };
   const app = require('../src/app');
   server = await new Promise((resolve) => {
-    const instance = app.listen(0, qa.HOST, () => resolve(instance));
+    const instance = app.listen(qa.PORT, qa.HOST, () => resolve(instance));
   });
   baseUrl = `http://${qa.HOST}:${server.address().port}/api`;
 });
 
 test.after(async () => {
   if (server) await new Promise((resolve) => server.close(resolve));
+  const mail = require('../src/handlers/mail');
+  if (originalSend) mail.send = originalSend;
   await cleanupFixtures(fixtures);
 });
 
-async function post(path, body, headers = {}) {
+async function post(path, body) {
   const response = await fetch(`${baseUrl}/${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...headers },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
-  let bodyJson = null;
-  try {
-    bodyJson = await response.json();
-  } catch (err) {
-    bodyJson = null;
-  }
-  return { response, body: bodyJson };
+  return { response, body: await response.json() };
 }
 
-test('removed password-reset endpoints (/forgetpassword and /resetpassword) are not accessible', async () => {
-  // Public requests are no longer handled by coreAuthRouter and fall through to auth guard (401)
-  const unauthForget = await post('forgetpassword', { email: emailFor('admin') });
-  assert.equal(unauthForget.response.status, 401, 'Unauthenticated POST /forgetpassword must be rejected');
+async function requestReset(email = emailFor('admin')) {
+  sentMessages = [];
+  const result = await post('forgetpassword', { email });
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.success, true);
+  const link = sentMessages[0]?.html.match(/href="([^"]+\/resetpassword\/[^\"]+)"/)?.[1];
+  return { ...result, link };
+}
 
-  const unauthReset = await post('resetpassword', {
+function parseResetLink(link) {
+  const url = new URL(link);
+  const [, userId, resetToken] = url.pathname.match(/\/resetpassword\/([^/]+)\/([^/]+)$/) || [];
+  assert.ok(userId && resetToken, 'captured email should include a reset link');
+  return { userId, resetToken };
+}
+
+test('request response does not reveal whether an account exists', async () => {
+  const known = await post('forgetpassword', { email: emailFor('admin') });
+  sentMessages = [];
+  const unknown = await post('forgetpassword', { email: 'not-registered@example.com' });
+  assert.equal(known.response.status, unknown.response.status);
+  assert.deepEqual(known.body, unknown.body);
+  assert.equal(sentMessages.length, 0);
+});
+
+test('stores only a hashed, time-limited token and consumes it once; new password can log in', async () => {
+  const previousLogin = await post('login', { email: emailFor('admin'), password: qa.PASSWORD });
+  assert.equal(previousLogin.response.status, 200);
+  const previousSessionToken = previousLogin.body.result.token;
+  const { link } = await requestReset();
+  const { userId, resetToken } = parseResetLink(link);
+  const saved = await AdminPassword.findOne({ user: userId });
+  assert.equal(saved.resetToken, crypto.createHash('sha256').update(resetToken).digest('hex'));
+  assert.ok(saved.resetTokenExpires > new Date());
+  assert.ok(saved.resetTokenExpires <= new Date(Date.now() + 60 * 60 * 1000 + 5000));
+  const newPassword = 'QA-new-password-2026!';
+  const reset = await post('resetpassword', { userId, resetToken, password: newPassword });
+  assert.equal(reset.response.status, 200, reset.body.message);
+  const consumed = await AdminPassword.findById(saved._id);
+  assert.equal(consumed.resetToken, null);
+  assert.equal(consumed.resetTokenExpires, null);
+  assert.deepEqual(consumed.loggedSessions, []);
+  const oldSession = await fetch(`${baseUrl}/admin/list`, {
+    headers: { authorization: `Bearer ${previousSessionToken}` },
+  });
+  assert.equal(oldSession.status, 401, 'password reset should revoke previously issued sessions');
+
+  const reused = await post('resetpassword', { userId, resetToken, password: newPassword });
+  assert.equal(reused.response.status, 400);
+  const login = await post('login', { email: emailFor('admin'), password: newPassword });
+  assert.equal(login.response.status, 200, login.body.message);
+  assert.equal(login.body.success, true);
+  assert.ok(login.body.result?.token);
+});
+
+test('rejects invalid and expired reset tokens', async () => {
+  const { link } = await requestReset();
+  const { userId, resetToken } = parseResetLink(link);
+  const invalid = await post('resetpassword', { userId, resetToken: 'a'.repeat(64), password: 'QA-new-password-2026!' });
+  assert.equal(invalid.response.status, 400);
+
+  await AdminPassword.updateOne({ user: userId }, { $set: { resetTokenExpires: new Date(Date.now() - 1000) } });
+  const expired = await post('resetpassword', { userId, resetToken, password: 'QA-new-password-2026!' });
+  assert.equal(expired.response.status, 400);
+});
+
+test('rejects weak passwords before looking up reset credentials', async () => {
+  const response = await post('resetpassword', {
     userId: String(fixtures.admin.user._id),
-    password: 'QA-new-password-2026!',
+    resetToken: 'a'.repeat(64),
+    password: 'weak',
   });
-  assert.equal(unauthReset.response.status, 401, 'Unauthenticated POST /resetpassword must be rejected');
-
-  // Authenticated requests pass the guard and confirm the route does not exist anywhere in the API (404)
-  const adminLogin = await post('login', { email: emailFor('admin'), password: qa.PASSWORD });
-  const token = adminLogin.body.result.token;
-
-  const authForget = await post('forgetpassword', { email: emailFor('admin') }, { authorization: `Bearer ${token}` });
-  assert.equal(authForget.response.status, 404, 'Authenticated POST /forgetpassword must return 404 Not Found');
-
-  const authReset = await post('resetpassword', {
-    userId: String(fixtures.admin.user._id),
-    password: 'QA-new-password-2026!',
-  }, { authorization: `Bearer ${token}` });
-  assert.equal(authReset.response.status, 404, 'Authenticated POST /resetpassword must return 404 Not Found');
-});
-
-test('login with valid credentials succeeds for admin, hr, and employee', async () => {
-  for (const role of ['admin', 'hr', 'employee']) {
-    const result = await post('login', {
-      email: emailFor(role),
-      password: qa.PASSWORD,
-    });
-    assert.equal(result.response.status, 200, `login for ${role} should succeed`);
-    assert.equal(result.body.success, true);
-    assert.ok(result.body.result?.token, `token should be returned for ${role}`);
-  }
-});
-
-test('login with invalid credentials is rejected', async () => {
-  const invalidPassword = await post('login', {
-    email: emailFor('admin'),
-    password: 'wrong-password-12345',
-  });
-  assert.notEqual(invalidPassword.response.status, 200, 'invalid password must not return 200');
-  assert.equal(invalidPassword.body?.success, false);
-
-  const unknownEmail = await post('login', {
-    email: 'nonexistent-user@example.com',
-    password: qa.PASSWORD,
-  });
-  assert.notEqual(unknownEmail.response.status, 200, 'unregistered user must not return 200');
-  assert.equal(unknownEmail.body?.success, false);
-});
-
-test('logout works for authenticated user and terminates session', async () => {
-  const loginRes = await post('login', { email: emailFor('admin'), password: qa.PASSWORD });
-  assert.equal(loginRes.response.status, 200);
-  const token = loginRes.body.result.token;
-
-  const logoutRes = await post('logout', {}, { authorization: `Bearer ${token}` });
-  assert.equal(logoutRes.response.status, 200);
-  assert.equal(logoutRes.body.success, true);
-});
-
-test('authenticated admin password-change functionality continues to work', async () => {
-  const adminLogin = await post('login', { email: emailFor('admin'), password: qa.PASSWORD });
-  const adminToken = adminLogin.body.result.token;
-
-  // Update password for test employee using the administrative password-update route
-  const targetUser = fixtures.employee.user;
-  const updateRes = await fetch(`${baseUrl}/admin/password-update/${targetUser._id}`, {
-    method: 'PATCH',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${adminToken}`,
-    },
-    body: JSON.stringify({ password: 'New-Valid-Password-2026!' }),
-  });
-
-  assert.equal(updateRes.status, 200, 'admin should be able to update user password');
-  const updateBody = await updateRes.json();
-  assert.equal(updateBody.success, true);
-
-  // Verify employee can log in with new password
-  const empLogin = await post('login', {
-    email: emailFor('employee'),
-    password: 'New-Valid-Password-2026!',
-  });
-  assert.equal(empLogin.response.status, 200, 'employee should log in with newly updated password');
-});
-
-test('employee role is forbidden from administrative password updates', async () => {
-  const empLogin = await post('login', { email: emailFor('employee'), password: 'New-Valid-Password-2026!' });
-  const empToken = empLogin.body.result.token;
-
-  const forbiddenRes = await fetch(`${baseUrl}/admin/password-update/${fixtures.hr.user._id}`, {
-    method: 'PATCH',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${empToken}`,
-    },
-    body: JSON.stringify({ password: 'Hacker-Password-2026!' }),
-  });
-
-  assert.equal(forbiddenRes.status, 403, 'employee must be forbidden from administrative password updates');
-});
-
-test('AdminPassword schema no longer defines resetToken or resetTokenExpires fields', async () => {
-  const schemaPaths = Object.keys(AdminPassword.schema.paths);
-  assert.equal(schemaPaths.includes('resetToken'), false, 'resetToken should not be in AdminPassword schema');
-  assert.equal(schemaPaths.includes('resetTokenExpires'), false, 'resetTokenExpires should not be in AdminPassword schema');
+  assert.equal(response.response.status, 409);
 });

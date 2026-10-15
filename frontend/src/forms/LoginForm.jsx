@@ -1,3 +1,4 @@
+import React from 'react';
 import { Form, Input, Checkbox } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
@@ -47,6 +48,9 @@ export default function LoginForm() {
         <Form.Item name="remember" valuePropName="checked" noStyle>
           <Checkbox>{translate('Remember me')}</Checkbox>
         </Form.Item>
+        <Link className="login-form-forgot" to="/forgetpassword" style={{ marginLeft: '0px' }}>
+          {translate('Forgot password')}
+        </Link>
       </Form.Item>
 
       <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>

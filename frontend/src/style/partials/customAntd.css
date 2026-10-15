@@ -31,6 +31,9 @@
 .login-form button[type='submit'] {
   margin-bottom: 20px;
 }
+.login-form-forgot {
+  float: right;
+}
 
 .login-form-button {
   width: 100%;
