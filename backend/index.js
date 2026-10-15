@@ -14,19 +14,6 @@ try {
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env.local'), override: true });
 
-let app;
-try {
-  app = require('./src/app.cjs');
-} catch (e1) {
-  try {
-    app = require('./src/app.js');
-  } catch (e2) {
-    try {
-      app = require('./src/app');
-    } catch (e3) {
-      app = require(path.resolve(__dirname, 'src', 'app'));
-    }
-  }
-}
+const app = require('./src/app.js');
 
 module.exports = app;
