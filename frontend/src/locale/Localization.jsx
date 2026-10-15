@@ -9,6 +9,12 @@ export default function Localization({ children }) {
           colorLink: '#1640D6',
           borderRadius: 0,
         },
+        components: {
+          Menu: {
+            itemSelectedColor: '#00474f',
+            itemSelectedBg: '#e6f4f2',
+          },
+        },
       }}
     >
       {children}
