@@ -1,11 +1,4 @@
-const getBackendServer = () => {
-  if (typeof window !== 'undefined' && window.location.origin.includes('vercel.app')) {
-    return window.location.origin;
-  }
-  return import.meta.env.VITE_BACKEND_SERVER || 'http://localhost:8888/';
-};
-
-const backendServer = getBackendServer();
+const backendServer = import.meta.env.VITE_BACKEND_SERVER || 'http://localhost:8888/';
 
 export const API_BASE_URL = backendServer.replace(/\/?$/, '/api/');
 export const BASE_URL = backendServer.replace(/\/?$/, '/');
