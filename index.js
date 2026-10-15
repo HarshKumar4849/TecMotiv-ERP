@@ -10,4 +10,4 @@ try {
   // If already registered or not required by bundler, continue
 }
 
-module.exports = require('./backend/index');
+module.exports = require('./backend/index.js');

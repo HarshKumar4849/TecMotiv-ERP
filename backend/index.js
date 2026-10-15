@@ -13,6 +13,6 @@ try {
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env.local'), override: true });
 
-const app = require('./src/app');
+const app = require('./src/app.js');
 
 module.exports = app;
