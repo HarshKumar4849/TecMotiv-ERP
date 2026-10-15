@@ -530,6 +530,22 @@ const employeeController = {
       });
     }
 
+    // Cascade deactivation to the associated login user account
+    if (result.user) {
+      const AdminModel = mongoose.model('Admin');
+      const UserPasswordModel = mongoose.model('AdminPassword');
+      await AdminModel.findByIdAndUpdate(result.user, {
+        enabled: false,
+        removed: true,
+        updated: Date.now(),
+      });
+      // Invalidate active login sessions
+      await UserPasswordModel.findOneAndUpdate(
+        { user: result.user },
+        { $set: { loggedSessions: [] } }
+      );
+    }
+
     return res.status(200).json({
       success: true,
       result,

@@ -21,7 +21,7 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
     const role = normalizeRole(user.role || (user.department === 'HR' ? 'HR' : ''));
     req.userRole = role;
 
-    const targetId = req.params.id;
+    const targetId = req.params.id || req.params.projectId;
     const userIdStr = user._id ? user._id.toString() : '';
     const userDept = user.department || '';
 
@@ -96,10 +96,11 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
 
     // 2. Resource-Level Ownership & Confidentiality Enforcement for Private Document Vault
     // Invariant: Private employee documents are accessible to:
-    // - ADMIN and HR (full enterprise visibility for HR compliance & management)
+    // - ADMIN (full enterprise visibility for system management)
     // - The owning employee or the user who uploaded the document
+    // (HR and other employees are denied access to another employee's private confidential documents)
     if (resource === 'document') {
-      const isPrivileged = role === ROLES.ADMIN || role === ROLES.HR;
+      const isPrivileged = role === ROLES.ADMIN;
 
       if (!isPrivileged) {
         if (action === 'read' || action === 'download') {
@@ -175,9 +176,20 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
           return res.status(403).json({
             success: false,
             result: null,
-            message: 'Access denied: Only administrators and HR can update, verify, or delete official private documents.',
+            message: 'Access denied: Only administrators can update, verify, or delete official private documents.',
           });
         }
+      }
+    }
+
+    // Block administrative password reset for all non-ADMIN roles
+    if (resource === 'admin' && (req.originalUrl || req.url || '').includes('password-update')) {
+      if (role !== ROLES.ADMIN) {
+        return res.status(403).json({
+          success: false,
+          result: null,
+          message: 'Access denied: Only administrators can execute administrative password resets.',
+        });
       }
     }
 
@@ -185,7 +197,7 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
     if (role === ROLES.EMPLOYEE) {
       // Rule: An employee must never access another employee's confidential profile
       if (resource === 'admin') {
-        if (action === 'read' || action === 'update' || action === 'password-update') {
+        if (action === 'read' || action === 'update') {
           if (targetId && targetId !== userIdStr) {
             return res.status(403).json({
               success: false,

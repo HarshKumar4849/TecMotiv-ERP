@@ -69,32 +69,35 @@ try {
         : authHeader;
 
       // Verify the token using the same middleware as HTTP routes
-      const isValidAuthToken = require('./middlewaresControllers/createAuthMiddleware/isValidAuthToken');
+      const adminAuth = require('./controllers/coreControllers/adminAuth');
       try {
-        isValidAuthToken(
-          { 
-            headers: { 'authorization': `Bearer ${token}` }, 
-            user: null 
-          }, 
-          { 
-            status: () => {}, 
-            json: () => {} 
-          }, 
+        const dummyReq = {
+          headers: { authorization: `Bearer ${token}` },
+          user: null,
+          admin: null,
+        };
+        const dummyRes = {
+          status: () => dummyRes,
+          json: () => dummyRes,
+        };
+        adminAuth.isValidAuthToken(
+          dummyReq,
+          dummyRes,
           async (err) => {
             if (err) {
               console.warn('Socket authentication failed:', err.message);
               socket.disconnect();
               return;
             }
-            
-            // Token is valid - req.user was set by isValidAuthToken
-            // Attach the authenticated user to the socket
-            const user = socket.request?.user || socket.user;
+
+            const user = dummyReq.user || dummyReq.admin;
             if (!user) {
               console.warn('No user authenticated on socket');
               socket.disconnect();
               return;
             }
+
+            socket.user = user;
 
             // Join user to their private room based on user ID
             // Format: user:{userId} - never let client subscribe to arbitrary rooms

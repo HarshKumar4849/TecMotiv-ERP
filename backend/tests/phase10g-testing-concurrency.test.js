@@ -96,13 +96,19 @@ test.before(async () => {
   // Create authorized project with PM and Employee
   testProject = await Project.create({
     name: 'TecMotiv Concurrency & Stress Hub',
-    projectManager: createdFixtures.employee.user._id,
-    teamMembers: [createdFixtures.employee.user._id, createdFixtures.employeeB.user._id],
-    status: 'in_progress',
+    category: 'MDS',
+    department: 'Engineering',
+    projectManager: createdFixtures.employee.employee._id,
+    teamMembers: [createdFixtures.employee.employee._id, createdFixtures.employeeB.employee._id],
+    startDate: new Date(),
+    targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    status: 'In Progress',
+    createdBy: createdFixtures.admin.user._id,
     github: {
-      repositoryId: 987654321,
-      owner: 'Tecmotiv-Solutions',
-      repo: 'core-stress-engine',
+      enabled: true,
+      repoId: 987654321,
+      repoOwner: 'Tecmotiv-Solutions',
+      repoName: 'core-stress-engine',
       fullName: 'Tecmotiv-Solutions/core-stress-engine',
       repoUrl: 'https://github.com/Tecmotiv-Solutions/core-stress-engine',
       defaultBranch: 'main',
@@ -116,13 +122,19 @@ test.before(async () => {
   // Create separate private project where employeeB is NOT a member
   unauthorizedProject = await Project.create({
     name: 'TecMotiv Admin Vault Only',
-    projectManager: createdFixtures.employee.user._id,
-    teamMembers: [createdFixtures.employee.user._id],
-    status: 'in_progress',
+    category: 'MDS',
+    department: 'Engineering',
+    projectManager: createdFixtures.employee.employee._id,
+    teamMembers: [createdFixtures.employee.employee._id],
+    startDate: new Date(),
+    targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    status: 'In Progress',
+    createdBy: createdFixtures.admin.user._id,
     github: {
-      repositoryId: 112233445,
-      owner: 'Tecmotiv-Solutions',
-      repo: 'admin-vault',
+      enabled: true,
+      repoId: 112233445,
+      repoOwner: 'Tecmotiv-Solutions',
+      repoName: 'admin-vault',
       fullName: 'Tecmotiv-Solutions/admin-vault',
       repoUrl: 'https://github.com/Tecmotiv-Solutions/admin-vault',
       defaultBranch: 'main',
@@ -137,7 +149,9 @@ test.before(async () => {
     project: testProject._id,
     task: '[TASK-CONCURRENCY-101] Stress Test Async Queues',
     title: '[TASK-CONCURRENCY-101] Stress Test Async Queues',
-    status: 'in_progress',
+    department: 'Engineering',
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    status: 'In Progress',
     assignedTo: createdFixtures.employeeB.user._id,
     githubLinks: {
       branches: [],
@@ -151,7 +165,7 @@ test.after(async () => {
   if (server) {
     await new Promise((resolve) => server.close(resolve));
   }
-  await cleanupFixtures();
+  await cleanupFixtures(createdFixtures);
 });
 
 test('1. High-concurrency duplicate webhook delivery creates exactly 1 audit record and handles all requests gracefully', async () => {
@@ -293,7 +307,9 @@ test('5. End-to-end task workflow integration: automated link extraction, reconc
     project: testProject._id,
     task: '[TASK-E2E-88] Realtime Distributed Caching',
     title: '[TASK-E2E-88] Realtime Distributed Caching',
-    status: 'in_progress',
+    department: 'Engineering',
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    status: 'In Progress',
     assignedTo: createdFixtures.employeeB.user._id,
     githubLinks: { branches: [], commits: [], pullRequests: [] },
   });

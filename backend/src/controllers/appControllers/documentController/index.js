@@ -187,7 +187,7 @@ const documentController = {
 
     const user = req.user || req.admin;
     const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
-    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+    const isPrivileged = [ROLES.ADMIN].includes(userRole);
 
     // If still not found, check if empInput corresponds to the requesting user or an existing Admin account
     if (!empRecord) {
@@ -526,7 +526,7 @@ const documentController = {
 
     const user = req.user || req.admin;
     const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
-    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+    const isPrivileged = [ROLES.ADMIN].includes(userRole);
 
     if (!isPrivileged && user) {
       const Employee = mongoose.model('Employee');
@@ -657,7 +657,7 @@ const documentController = {
 
     const user = req.user || req.admin;
     const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
-    const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+    const isPrivileged = [ROLES.ADMIN].includes(userRole);
 
     const andConditions = [{ removed: false }];
 

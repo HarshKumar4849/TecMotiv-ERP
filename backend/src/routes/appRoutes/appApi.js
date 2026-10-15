@@ -513,44 +513,53 @@ if (appControllers['githubController']) {
   const { githubProxyLimiter, githubSyncLimiter } = require('../../middlewares/githubRateLimiter');
 
   router.route('/github/project/:projectId/link').post(
+    rbacMiddleware('project', 'update'),
     catchErrors(appControllers['githubController'].linkRepository)
   );
 
   router.route('/github/project/:projectId/unlink').post(
+    rbacMiddleware('project', 'update'),
     catchErrors(appControllers['githubController'].unlinkRepository)
   );
 
   router.route('/github/project/:projectId/overview').get(
+    rbacMiddleware('project', 'read'),
     githubProxyLimiter,
     catchErrors(appControllers['githubController'].getRepositoryOverview)
   );
 
   router.route('/github/project/:projectId/commits').get(
+    rbacMiddleware('project', 'read'),
     githubProxyLimiter,
     catchErrors(appControllers['githubController'].getCommits)
   );
 
   router.route('/github/project/:projectId/pulls').get(
+    rbacMiddleware('project', 'read'),
     githubProxyLimiter,
     catchErrors(appControllers['githubController'].getPullRequests)
   );
 
   router.route('/github/project/:projectId/issues').get(
+    rbacMiddleware('project', 'read'),
     githubProxyLimiter,
     catchErrors(appControllers['githubController'].getIssues)
   );
 
   router.route('/github/project/:projectId/branches').get(
+    rbacMiddleware('project', 'read'),
     githubProxyLimiter,
     catchErrors(appControllers['githubController'].getBranches)
   );
 
   router.route('/github/project/:projectId/sync').post(
+    rbacMiddleware('project', 'update'),
     githubSyncLimiter,
     catchErrors(appControllers['githubController'].syncRepository)
   );
 
   router.route('/github/project/:projectId/activity').get(
+    rbacMiddleware('project', 'read'),
     githubProxyLimiter,
     catchErrors(appControllers['githubController'].getActivity)
   );
