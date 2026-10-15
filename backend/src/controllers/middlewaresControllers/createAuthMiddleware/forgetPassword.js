@@ -49,7 +49,14 @@ const forgetPassword = async (req, res, { userModel }) => {
       const idurar_app_email = settings['idurar_app_email'];
       const idurar_base_url = settings['idurar_base_url'];
       const configuredClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL)?.split(',')[0].trim();
-      const originFromHeader = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+      let originFromHeader = req.headers.origin;
+      if (!originFromHeader && req.headers.referer) {
+        try {
+          originFromHeader = new URL(req.headers.referer).origin;
+        } catch (e) {
+          originFromHeader = null;
+        }
+      }
       const hostFromHeader = req.headers['x-forwarded-host'] || req.headers.host;
       const protoFromHeader = req.headers['x-forwarded-proto'] || 'https';
       const forwardedUrl = hostFromHeader ? `${protoFromHeader}://${hostFromHeader}` : null;

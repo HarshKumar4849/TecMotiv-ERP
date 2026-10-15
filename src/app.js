@@ -1,2 +1,3 @@
-// Bridge entrypoint for Vercel monorepo bundlers resolving relative to repository root
-module.exports = require('../backend/src/app');
+const path = require('path');
+module.exports = require(path.resolve(__dirname, '../backend/src/app'));
+
