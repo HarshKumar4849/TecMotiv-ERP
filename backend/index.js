@@ -1,6 +1,4 @@
-const express = require('express');
 const path = require('path');
-const fs = require('fs');
 
 // Ensure module resolution works from backend node_modules and monorepo root
 module.paths.unshift(path.resolve(__dirname, 'node_modules'));
@@ -15,7 +13,16 @@ try {
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env.local'), override: true });
 
-// Static require allows @vercel/nft to trace and bundle backend/src/**
-const app = require('./src/app.js');
+// Robust dual resolution for local Node runtime, Vercel Serverless, and bundlers
+let app;
+try {
+  app = require('./src/app');
+} catch (e) {
+  try {
+    app = require(path.join(__dirname, 'src', 'app'));
+  } catch (e2) {
+    app = require('../backend/src/app');
+  }
+}
 
 module.exports = app;

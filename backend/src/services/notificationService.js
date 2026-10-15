@@ -81,7 +81,7 @@ const emailDeliveryAdapter = async ({ toEmail, recipientName, title, message, li
             <h2 style="color: #002244;">TECMOTIV SOLUTIONS</h2>
             <h3>${title}</h3>
             <p>${message}</p>
-            ${link ? `<p><a href="${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000'}${link}" style="display:inline-block;padding:10px 16px;background:#002244;color:#fff;text-decoration:none;border-radius:4px;">View in ERP</a></p>` : ''}
+            ${link ? `<p><a href="${process.env.PUBLIC_SERVER_FILE || 'http://localhost:3000'}${link}" style="display:inline-block;padding:10px 16px;background:#002244;color:#fff;text-decoration:none;border-radius:4px;">View in ERP</a></p>` : ''}
             <hr style="border:none;border-top:1px solid #eee;margin-top:20px;" />
             <p style="font-size:12px;color:#888;">This is an automated notification from TecMotiv ERP.</p>
           </div>
@@ -110,7 +110,7 @@ const whatsappDeliveryAdapter = async ({ toPhone, recipientName, title, message,
       to: toPhone.replace(/[^0-9]/g, ''),
       type: 'text',
       text: {
-        body: `*TECMOTIV ERP: ${title}*\n\n${message}${link ? `\n\nLink: ${process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000'}${link}` : ''}`,
+        body: `*TECMOTIV ERP: ${title}*\n\n${message}${link ? `\n\nLink: ${process.env.PUBLIC_SERVER_FILE || 'http://localhost:3000'}${link}` : ''}`,
       },
     };
 

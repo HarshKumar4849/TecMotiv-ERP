@@ -107,6 +107,26 @@ export const verifyOtpLogin =
     }
   };
 
+export const resetPassword =
+  ({ resetPasswordData }) =>
+  async (dispatch) => {
+    dispatch({
+      type: actionTypes.REQUEST_LOADING,
+    });
+    const data = await authService.resetPassword({ resetPasswordData });
+
+    if (data.success === true) {
+      window.localStorage.removeItem('auth');
+      dispatch({ type: actionTypes.LOGOUT_SUCCESS });
+      return data;
+    } else {
+      dispatch({
+        type: actionTypes.REQUEST_FAILED,
+      });
+      return data;
+    }
+  };
+
 export const logout = () => async (dispatch) => {
   dispatch({
     type: actionTypes.LOGOUT_SUCCESS,

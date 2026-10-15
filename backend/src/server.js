@@ -43,22 +43,9 @@ let isInitialized = false;
 
 try {
   const http = require('http').createServer(app);
-  const socketOrigins = process.env.CLIENT_URL
-    ? process.env.CLIENT_URL.split(',').map((u) => u.trim().replace(/\/+$/, ''))
-    : [];
   const ioModule = require('socket.io')(http, {
     cors: {
-      origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        const clean = origin.replace(/\/+$/, '');
-        const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(clean);
-        const isVercel = /\.vercel\.app$/.test(clean);
-        if (isLocal || isVercel || socketOrigins.includes(clean) || process.env.NODE_ENV !== 'production') {
-          callback(null, true);
-        } else {
-          callback(new Error('Socket CORS: origin not allowed'));
-        }
-      },
+      origin: process.env.CLIENT_URL || 'http://127.0.0.1:4173',
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -174,9 +161,8 @@ try {
     }
   });
 
-  const HOST = process.env.HOST || '0.0.0.0';
-  const httpServer = http.listen(app.get('port'), HOST, () => {
-    console.log(`Server running → ${HOST}:${httpServer.address().port}, Socket.IO enabled`);
+  const httpServer = http.listen(app.get('port'), () => {
+    console.log(`Server running → HTTP: ${httpServer.address().port}, Socket.IO enabled`);
   });
 
   // Mark as initialized so other modules can safely import io
@@ -186,9 +172,8 @@ try {
   module.exports = { app, server: httpServer, io };
 } catch (ioError) {
   console.error('Failed to initialize Socket.IO:', ioError.message);
-  const HOST = process.env.HOST || '0.0.0.0';
-  const server = app.listen(app.get('port'), HOST, () => {
-    console.log(`Express running → ${HOST}:${app.get('port')} (Socket.IO disabled)`);
+  const server = app.listen(app.get('port'), () => {
+    console.log(`Express running → On PORT : ${app.get('port')} (Socket.IO disabled)`);
   });
   module.exports = { app, server };
 }
