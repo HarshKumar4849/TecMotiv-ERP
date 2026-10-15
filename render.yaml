@@ -1,0 +1,42 @@
+# Render Blueprint — TecMotiv ERP Backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: tecmotiv-erp-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE
+        sync: false  # Set in Render dashboard — MongoDB Atlas connection string
+      - key: JWT_SECRET
+        sync: false  # Set in Render dashboard — cryptographically secure random string
+      - key: CLIENT_URL
+        sync: false  # Set in Render dashboard — e.g. https://your-app.vercel.app
+      - key: FRONTEND_URL
+        sync: false  # Set in Render dashboard — same as CLIENT_URL
+      - key: PUBLIC_SERVER_FILE
+        sync: false  # Set in Render dashboard — e.g. https://tecmotiv-erp-api.onrender.com
+      - key: PORT
+        value: "8888"
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false  # Set in Render dashboard
+      - key: EMAIL_PASS
+        sync: false  # Set in Render dashboard
+      - key: RESEND_API
+        sync: false  # Set in Render dashboard (optional)
+      - key: OPENAI_API_KEY
+        sync: false  # Set in Render dashboard (optional)
+      - key: GITHUB_TOKEN
+        sync: false  # Set in Render dashboard (optional)
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false  # Set in Render dashboard (optional)
