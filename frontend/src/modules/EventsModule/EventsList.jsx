@@ -415,6 +415,7 @@ export default function EventsList({
             dataSource={events}
             rowKey="_id"
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 800 }}
           />
         </Card>
       ) : (

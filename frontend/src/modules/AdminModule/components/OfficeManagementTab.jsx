@@ -323,6 +323,7 @@ export default function OfficeManagementTab() {
           rowKey="_id"
           loading={loading}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 800 }}
         />
       </Card>
 

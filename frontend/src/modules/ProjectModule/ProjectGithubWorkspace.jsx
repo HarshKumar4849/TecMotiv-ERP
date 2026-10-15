@@ -524,6 +524,7 @@ export default function ProjectGithubWorkspace({ project, onRefresh }) {
                   rowKey="sha"
                   loading={loadingCommits}
                   size="small"
+                  scroll={{ x: 750 }}
                   pagination={{
                     current: commitPage,
                     pageSize: 10,
@@ -607,6 +608,7 @@ export default function ProjectGithubWorkspace({ project, onRefresh }) {
                   rowKey="id"
                   loading={loadingPulls}
                   size="small"
+                  scroll={{ x: 750 }}
                   pagination={false}
                   locale={{ emptyText: 'No pull requests found.' }}
                   columns={[
@@ -671,6 +673,7 @@ export default function ProjectGithubWorkspace({ project, onRefresh }) {
                   rowKey="id"
                   loading={loadingIssues}
                   size="small"
+                  scroll={{ x: 750 }}
                   pagination={false}
                   locale={{ emptyText: 'No issues found.' }}
                   columns={[
@@ -717,6 +720,7 @@ export default function ProjectGithubWorkspace({ project, onRefresh }) {
                   rowKey="_id"
                   loading={loadingActivities}
                   size="small"
+                  scroll={{ x: 750 }}
                   pagination={{ pageSize: 10, showSizeChanger: false }}
                   locale={{ emptyText: 'No webhook activity events recorded yet.' }}
                   columns={[

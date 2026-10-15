@@ -38,6 +38,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { request } from '@/request';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
+import { getSocket } from '@/utils/socket';
 
 dayjs.extend(relativeTime);
 
@@ -149,6 +150,27 @@ export default function NotificationCenterDrawer({ visible, onClose, onRefreshCo
   useEffect(() => {
     if (visible) {
       fetchNotifications();
+
+      const socket = getSocket();
+      if (socket) {
+        const handleList = (data) => {
+          if (data && Array.isArray(data.notifications)) {
+            setNotifications(data.notifications);
+            if (typeof data.unreadCount === 'number') {
+              setUnreadCount(data.unreadCount);
+              if (onRefreshCount) onRefreshCount(data.unreadCount);
+            }
+          }
+        };
+
+        socket.on('notification-list', handleList);
+        socket.on('initial-notifications', handleList);
+
+        return () => {
+          socket.off('notification-list', handleList);
+          socket.off('initial-notifications', handleList);
+        };
+      }
     }
   }, [visible, activeTab]);
 

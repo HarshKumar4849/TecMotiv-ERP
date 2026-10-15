@@ -480,6 +480,7 @@ export default function GoogleCalendarSyncModal({ visible, onClose, onSuccess })
                       rowKey="id"
                       loading={loadingEvents}
                       pagination={{ pageSize: 5 }}
+                      scroll={{ x: 600 }}
                       columns={[
                         {
                           title: 'Summary / Title',
@@ -537,6 +538,7 @@ export default function GoogleCalendarSyncModal({ visible, onClose, onSuccess })
                     dataSource={statusData?.recentLogs || []}
                     rowKey={(r, idx) => idx}
                     pagination={{ pageSize: 5 }}
+                    scroll={{ x: 600 }}
                     columns={[
                       {
                         title: 'Timestamp',

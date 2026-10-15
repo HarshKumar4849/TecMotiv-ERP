@@ -543,6 +543,7 @@ export default function AdminManagement({ userRole, currentAdmin }) {
                     rowKey="_id"
                     loading={loading}
                     pagination={{ pageSize: 8 }}
+                    scroll={{ x: 850 }}
                   />
                 </Card>
               ),
@@ -587,6 +588,7 @@ export default function AdminManagement({ userRole, currentAdmin }) {
             rowKey="_id"
             loading={loading}
             pagination={{ pageSize: 6 }}
+            scroll={{ x: 850 }}
           />
         </Card>
       )}

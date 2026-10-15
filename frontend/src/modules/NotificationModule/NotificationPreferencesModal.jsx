@@ -311,7 +311,7 @@ export default function NotificationPreferencesModal({ visible, onClose, onSucce
               columns={columns}
               rowKey="key"
               pagination={false}
-              scroll={{ y: 260 }}
+              scroll={{ y: 260, x: 450 }}
             />
           </Card>
 

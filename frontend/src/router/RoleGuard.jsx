@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { Result, Button, Card, Typography, Space, Tag } from 'antd';
 import { LockOutlined, HomeOutlined, SafetyOutlined } from '@ant-design/icons';
 import { selectCurrentAdmin } from '@/redux/auth/selectors';
@@ -12,7 +12,11 @@ export default function RoleGuard({ moduleKey, children }) {
   const currentAdmin = useSelector(selectCurrentAdmin);
   const navigate = useNavigate();
 
-  const userRole = currentAdmin?.role || 'EMPLOYEE';
+  if (!currentAdmin || !currentAdmin.role) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const userRole = currentAdmin.role;
   const isAllowed = canAccessModule(userRole, moduleKey);
 
   if (!isAllowed) {
