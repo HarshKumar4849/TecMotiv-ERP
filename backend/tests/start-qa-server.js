@@ -9,7 +9,7 @@ const runId = (process.env.QA_RUN_ID || 'browser-audit-2026').toLowerCase();
 qa.RUN_ID = runId;
 
 process.env.DATABASE = qa.DATABASE;
-process.env.PORT = '8899';
+process.env.PORT = process.env.QA_API_PORT || '8888';
 process.env.JWT_SECRET = 'ci-only-qa-secret';
 process.env.NODE_ENV = 'test';
 

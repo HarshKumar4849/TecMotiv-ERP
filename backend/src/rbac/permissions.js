@@ -103,6 +103,12 @@ const isActionAllowed = (rawRole, resource, action) => {
     if (calendarAllowed) return true;
   }
 
+  // Project updates: allow at matrix level so that Project Managers (who are employees)
+  // can update and manage their projects (fine-grained PM check is strictly enforced in rbacMiddleware).
+  if (resKey === 'project' && action.toLowerCase() === 'update') {
+    return true;
+  }
+
   const resourceRules = permissions[resKey];
   if (!resourceRules) return false;
 

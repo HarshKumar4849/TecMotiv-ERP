@@ -1088,7 +1088,7 @@ const linkGithub = async (req, res) => {
     }
 
     const Task = mongoose.model('Task');
-    const task = await Task.findOne({ _id: id, removed: false });
+    let task = await Task.findOne({ _id: id, removed: false });
     if (!task) return res.status(404).json({ success: false, message: 'Task not found.' });
 
     const hasAccess = await checkTaskAccess(task, req.user, req.user?.role);
@@ -1096,7 +1096,8 @@ const linkGithub = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied: You are not authorized to modify this task.' });
     }
 
-    const { type, item } = req.body;
+    const type = req.body.type;
+    const item = req.body.item || req.body;
     if (!type || !item) {
       return res.status(400).json({ success: false, message: 'Type and item data are required.' });
     }
@@ -1109,60 +1110,82 @@ const linkGithub = async (req, res) => {
       if (!item.sha || !/^[a-fA-F0-9]{7,40}$/.test(item.sha)) {
         return res.status(400).json({ success: false, message: 'Invalid commit SHA format. Must be a 7 to 40 character hexadecimal hash.' });
       }
-      const exists = task.githubLinks.commits.some((c) => c.sha === item.sha);
-      if (!exists) {
-        task.githubLinks.commits.push({
-          sha: item.sha,
-          shortSha: item.shortSha || item.sha.substring(0, 7),
-          message: typeof item.message === 'string' ? item.message.trim().substring(0, 300) : '',
-          author: typeof item.author === 'string' ? item.author.trim().substring(0, 100) : req.user.name || '',
-          url: item.url || '',
-          date: item.date ? new Date(item.date) : new Date(),
-          linkedAt: new Date(),
-          linkedBy: req.user._id,
-        });
-      }
+      const commitObj = {
+        sha: item.sha,
+        shortSha: item.shortSha || item.sha.substring(0, 7),
+        message: typeof item.message === 'string' ? item.message.trim().substring(0, 300) : '',
+        author: typeof item.author === 'string' ? item.author.trim().substring(0, 100) : req.user.name || '',
+        url: item.url || '',
+        date: item.date ? new Date(item.date) : new Date(),
+        linkedAt: new Date(),
+        linkedBy: req.user._id,
+      };
+
+      const updated = await Task.findOneAndUpdate(
+        { _id: id, 'githubLinks.commits.sha': { $ne: item.sha } },
+        { $push: { 'githubLinks.commits': commitObj } },
+        { new: true }
+      );
+      task = updated || (await Task.findById(id));
     } else if (type === 'pullRequest') {
       const prNum = parseInt(item.number, 10);
       if (isNaN(prNum) || prNum <= 0) {
         return res.status(400).json({ success: false, message: 'Invalid pull request number. Must be a positive integer.' });
       }
-      const existsIdx = task.githubLinks.pullRequests.findIndex((p) => p.number === prNum);
-      if (existsIdx >= 0) {
-        task.githubLinks.pullRequests[existsIdx].state = item.state || task.githubLinks.pullRequests[existsIdx].state;
-        task.githubLinks.pullRequests[existsIdx].title = typeof item.title === 'string' ? item.title.trim().substring(0, 300) : task.githubLinks.pullRequests[existsIdx].title;
-        task.githubLinks.pullRequests[existsIdx].isMerged = item.isMerged !== undefined ? item.isMerged : task.githubLinks.pullRequests[existsIdx].isMerged;
+      const prObj = {
+        number: prNum,
+        title: typeof item.title === 'string' ? item.title.trim().substring(0, 300) : '',
+        state: item.state || 'open',
+        url: item.url || '',
+        isMerged: Boolean(item.isMerged),
+        headBranch: typeof item.headBranch === 'string' ? item.headBranch.trim().substring(0, 100) : '',
+        baseBranch: typeof item.baseBranch === 'string' ? item.baseBranch.trim().substring(0, 100) : '',
+        linkedAt: new Date(),
+        linkedBy: req.user._id,
+      };
+
+      const updatedExisting = await Task.findOneAndUpdate(
+        { _id: id, 'githubLinks.pullRequests.number': prNum },
+        {
+          $set: {
+            'githubLinks.pullRequests.$.state': prObj.state,
+            'githubLinks.pullRequests.$.title': prObj.title,
+            'githubLinks.pullRequests.$.isMerged': prObj.isMerged,
+          },
+        },
+        { new: true }
+      );
+
+      if (updatedExisting) {
+        task = updatedExisting;
       } else {
-        task.githubLinks.pullRequests.push({
-          number: prNum,
-          title: typeof item.title === 'string' ? item.title.trim().substring(0, 300) : '',
-          state: item.state || 'open',
-          url: item.url || '',
-          isMerged: Boolean(item.isMerged),
-          headBranch: typeof item.headBranch === 'string' ? item.headBranch.trim().substring(0, 100) : '',
-          baseBranch: typeof item.baseBranch === 'string' ? item.baseBranch.trim().substring(0, 100) : '',
-          linkedAt: new Date(),
-          linkedBy: req.user._id,
-        });
+        const pushed = await Task.findOneAndUpdate(
+          { _id: id, 'githubLinks.pullRequests.number': { $ne: prNum } },
+          { $push: { 'githubLinks.pullRequests': prObj } },
+          { new: true }
+        );
+        task = pushed || (await Task.findById(id));
       }
     } else if (type === 'branch') {
       if (!item.name || !/^[a-zA-Z0-9._\-/]+$/.test(item.name)) {
         return res.status(400).json({ success: false, message: 'Invalid branch name format.' });
       }
-      const exists = task.githubLinks.branches.some((b) => b.name === item.name);
-      if (!exists) {
-        task.githubLinks.branches.push({
-          name: item.name.trim().substring(0, 100),
-          url: item.url || '',
-          linkedAt: new Date(),
-          linkedBy: req.user._id,
-        });
-      }
+      const branchObj = {
+        name: item.name.trim().substring(0, 100),
+        url: item.url || '',
+        linkedAt: new Date(),
+        linkedBy: req.user._id,
+      };
+
+      const updated = await Task.findOneAndUpdate(
+        { _id: id, 'githubLinks.branches.name': { $ne: branchObj.name } },
+        { $push: { 'githubLinks.branches': branchObj } },
+        { new: true }
+      );
+      task = updated || (await Task.findById(id));
     } else {
       return res.status(400).json({ success: false, message: 'Invalid type: must be commit, pullRequest, or branch.' });
     }
-
-    await task.save();
 
     return res.status(200).json({
       success: true,

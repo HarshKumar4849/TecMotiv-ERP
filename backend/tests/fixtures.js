@@ -5,11 +5,7 @@ const qa = require('./qa-env');
 
 require('module-alias/register');
 
-const path = require('node:path');
-const modelsDir = path.resolve(__dirname, '../src/models').replace(/\\/g, '/');
-for (const modelPath of globSync(`${modelsDir}/**/*.js`)) {
-  require(path.resolve(modelPath));
-}
+require('../src/models/loadAllModels.js');
 
 const Admin = mongoose.model('Admin');
 const AdminPassword = mongoose.model('AdminPassword');

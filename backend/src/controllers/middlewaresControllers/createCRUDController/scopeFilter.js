@@ -20,7 +20,7 @@ const buildScopeFilter = (Model, req) => {
 
   for (const key of SCOPE_QUERY_KEYS) {
     const value = req.query && req.query[key];
-    if (!value || value === 'all' || value === '000000000000000000000000') {
+    if (!value || value === 'all') {
       continue;
     }
     // Only apply when the model actually has this field
