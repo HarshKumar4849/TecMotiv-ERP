@@ -123,10 +123,10 @@ async function main() {
     hrToken = hrLogin.data.result.token;
   }
 
-  // Forget password validation test
-  await testApi('Forget Password validation', 'POST', '/forgetpassword', null, {
+  // Verify retired forget password endpoint is not registered (404)
+  await testApi('Retired Forget Password endpoint is 404', 'POST', '/forgetpassword', null, {
     email: 'admin@admin.com',
-  }, [200]);
+  }, [404]);
 
   if (!adminToken) {
     console.error('CRITICAL: Cannot proceed without Admin Token!');
