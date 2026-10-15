@@ -15,6 +15,7 @@ const sendMail = async ({
     to: email,
     subject,
     html: passwordVerfication({ name, link, otp }),
+    text: `Hello ${name || 'User'},\n\nWe received a request to reset your password on TecMotiv ERP.\n\nYour 6-digit verification code is: ${otp}\n\nOr click this link to reset your password directly:\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
   });
 };
 

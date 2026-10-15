@@ -42,8 +42,13 @@ frontend-qa.log
 # Uploaded user files (Preserve placeholder/gitkeep)
 backend/public/uploads/*
 backend/src/public/uploads/*
+backend/src/storage/vault/*
+src/storage/vault/*
+!backend/public/uploads/.gitkeep
 !backend/src/public/uploads/.gitkeep
 !backend/src/public/uploads/**/.gitkeep
+!backend/src/storage/vault/.gitkeep
+!src/storage/vault/.gitkeep
 
 # System and IDE artifacts
 .DS_Store
