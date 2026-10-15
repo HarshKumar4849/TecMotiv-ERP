@@ -10,6 +10,14 @@
       "framework": "express"
     }
   },
+  "functions": {
+    "backend/index.js": {
+      "includeFiles": "backend/src/**"
+    },
+    "index.js": {
+      "includeFiles": "src/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
