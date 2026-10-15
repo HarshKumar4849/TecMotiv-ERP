@@ -3,5 +3,11 @@
   "framework": "vite",
   "installCommand": "npm install --prefix frontend",
   "buildCommand": "npm run build --prefix frontend",
-  "outputDirectory": "frontend/dist"
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
