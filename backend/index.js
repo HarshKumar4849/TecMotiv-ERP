@@ -1,3 +1,4 @@
+const express = require('express');
 const path = require('path');
 
 // Ensure module resolution works from backend node_modules and monorepo root
@@ -13,6 +14,19 @@ try {
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env.local'), override: true });
 
-const app = require('./src/app.js');
+let app;
+try {
+  app = require('./src/app.cjs');
+} catch (e1) {
+  try {
+    app = require('./src/app.js');
+  } catch (e2) {
+    try {
+      app = require('./src/app');
+    } catch (e3) {
+      app = require(path.resolve(__dirname, 'src', 'app'));
+    }
+  }
+}
 
 module.exports = app;
