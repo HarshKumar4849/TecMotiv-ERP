@@ -547,8 +547,6 @@ The following matrix documents the verification status across all discovered rou
 |------------|---------------|:-----:|:--:|:--------:|:----------------:|:------:|
 | `/login` | Public Authentication View | PASS | PASS | PASS | Desktop, Tablet, Mobile | **PASS** |
 | `/register` | Public Registration View | PASS | PASS | PASS | Desktop, Tablet, Mobile | **PASS** |
-| `/forgetpassword` | Password Recovery Request | PASS | PASS | PASS | Desktop, Tablet, Mobile | **PASS** |
-| `/resetpassword/:token`| Password Reset Form | PASS | PASS | PASS | Desktop, Tablet, Mobile | **PASS** |
 | `/logout` | Session Termination | PASS | PASS | PASS | Desktop, Tablet, Mobile | **PASS** |
 | `/` | Operational Dashboard | PASS | PASS | PASS (Scoped) | Desktop, Tablet, Mobile | **PASS** |
 | `/attendance` | Attendance Clock & Records | PASS | PASS | PASS (Self) | Desktop, Tablet, Mobile | **PASS** |
@@ -761,8 +759,6 @@ A comprehensive, end-to-end security, workflow, adversarial, and regression audi
 | | `/register` | `POST /api/register` | Public | Always forces `role: 'EMPLOYEE'` |
 | | `/verify-otp` | `POST /api/verify-otp` | Public | Links Employee profile on registration |
 | | `/resend-otp` | `POST /api/resend-otp` | Public | Rate-limited OTP resend |
-| | `/forgetpassword`| `POST /api/forgetpassword` | Public | Issues password reset tokens |
-| | `/resetpassword/:token`| `POST /api/resetpassword` | Public | Validates token and resets password |
 | | `/logout` | `POST /api/logout` | Authenticated | Terminates session cookie |
 | **Dashboard** | `/` | `GET /api/dashboard/overview` | All | Scoped: Management view for Admin/HR; personal stats for Employee |
 | **Employee Master**| `/employees` | `GET/POST /api/employee/*` | ADMIN, HR | Full directory CRUD; blocked for standard Employee |
