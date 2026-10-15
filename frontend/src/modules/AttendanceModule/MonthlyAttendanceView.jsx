@@ -258,7 +258,8 @@ export default function MonthlyAttendanceView({ currentAdmin, userRole }) {
       >
         {loading ? (
           <div style={{ padding: '60px 0', textAlign: 'center' }}>
-            <Spin tip="Calculating monthly metrics..." />
+            <Spin size="large" />
+            <div style={{ marginTop: 12, color: '#8c8c8c' }}>Calculating monthly metrics...</div>
           </div>
         ) : (
           <div>

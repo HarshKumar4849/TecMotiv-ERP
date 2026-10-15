@@ -208,7 +208,8 @@ export default function DailyLoginDashboard({ currentAdmin, userRole, onNavigate
 
             {loading ? (
               <div style={{ padding: '40px 0', textAlign: 'center' }}>
-                <Spin tip="Fetching daily attendance state..." />
+                <Spin size="large" />
+                <div style={{ marginTop: 12, color: '#8c8c8c' }}>Fetching daily attendance state...</div>
               </div>
             ) : (
               <div>

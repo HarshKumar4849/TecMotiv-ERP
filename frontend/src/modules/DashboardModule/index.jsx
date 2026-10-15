@@ -86,7 +86,7 @@ export default function DashboardModule() {
     return (
       <div style={{ padding: 80, textAlign: 'center' }}>
         <Spin size="large" />
-        <div style={{ marginTop: 16, color: '#8c8c8c' }}>
+        <div style={{ marginTop: 16, color: '#475569' }}>
           Loading TecMotiv ERP Management Dashboard...
         </div>
       </div>

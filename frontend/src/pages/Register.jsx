@@ -308,7 +308,7 @@ export default function RegisterPage() {
         <Row gutter={12}>
           <Col span={12}>
             <Form.Item label="Account Position / Role" name="role">
-              <Select size="large" disabled defaultValue="EMPLOYEE">
+              <Select size="large" disabled>
                 <Option value="EMPLOYEE">Employee (Staff)</Option>
               </Select>
             </Form.Item>
