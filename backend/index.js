@@ -13,16 +13,6 @@ try {
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env.local'), override: true });
 
-// Robust dual resolution for local Node runtime, Vercel Serverless, and bundlers
-let app;
-try {
-  app = require('./src/app');
-} catch (e) {
-  try {
-    app = require(path.join(__dirname, 'src', 'app'));
-  } catch (e2) {
-    app = require('../backend/src/app');
-  }
-}
+const app = require('./src/app');
 
 module.exports = app;
