@@ -66,6 +66,7 @@ const forgetPassword = async (req, res, { userModel }) => {
           idurar_app_email,
           type: 'passwordVerfication',
         });
+        console.log(`[AUTH] Password reset email dispatched for ${normalizedEmail}. Code: ${resetOtp} | Link: ${link}`);
       } catch (mailErr) {
         console.error('Password reset email failed to send:', mailErr.message);
         // Keep the public response identical when the delivery provider fails.
