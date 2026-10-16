@@ -18,52 +18,82 @@ async function setupApp() {
   try {
     const Admin = require('../models/coreModels/Admin');
     const AdminPassword = require('../models/coreModels/AdminPassword');
-    const newAdminPassword = new AdminPassword();
 
-    const salt = uniqueId();
+    const adminAccounts = [
+      {
+        email: 'admin@admin.com',
+        name: 'TecMotiv',
+        surname: 'Admin',
+        enabled: true,
+        role: 'owner',
+      },
+    ];
 
-    const passwordHash = newAdminPassword.generateHash(salt, 'admin123');
+    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'admin@admin.com') {
+      adminAccounts.push({
+        email: process.env.EMAIL_USER.trim().toLowerCase(),
+        name: 'Harsh',
+        surname: 'Kumar',
+        enabled: true,
+        role: 'owner',
+      });
+    }
 
-    const demoAdmin = {
-      email: 'admin@admin.com',
-      name: 'TecMotiv',
-      surname: 'Admin',
-      enabled: true,
-      role: 'owner',
-    };
-    const result = await new Admin(demoAdmin).save();
+    for (const account of adminAccounts) {
+      let existingAdmin = await Admin.findOne({ email: account.email });
+      if (!existingAdmin) {
+        existingAdmin = await new Admin(account).save();
+        console.log(`👍 Admin created (${account.email}) : Done!`);
+      } else {
+        existingAdmin.enabled = true;
+        existingAdmin.removed = false;
+        await existingAdmin.save();
+        console.log(`ℹ️ Admin already exists (${account.email}) : Updated!`);
+      }
 
-    const AdminPasswordData = {
-      password: passwordHash,
-      emailVerified: true,
-      salt: salt,
-      user: result._id,
-    };
-    await new AdminPassword(AdminPasswordData).save();
+      const salt = uniqueId();
+      const newAdminPassword = new AdminPassword();
+      const passwordHash = newAdminPassword.generateHash(salt, 'admin123');
 
-    console.log('👍 Admin created : Done!');
+      await AdminPassword.findOneAndUpdate(
+        { user: existingAdmin._id },
+        {
+          $set: {
+            password: passwordHash,
+            emailVerified: true,
+            salt: salt,
+            user: existingAdmin._id,
+            removed: false,
+          },
+        },
+        { upsert: true, new: true }
+      );
+    }
 
     const Setting = require('../models/coreModels/Setting');
-
     const settingFiles = [];
-
-    const settingsFiles = globSync('./src/setup/defaultSettings/**/*.json');
+    const settingsPattern = path.resolve(__dirname, 'defaultSettings/**/*.json').replace(/\\/g, '/');
+    const settingsFiles = globSync(settingsPattern);
 
     for (const filePath of settingsFiles) {
       const file = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       settingFiles.push(...file);
     }
 
-    await Setting.insertMany(settingFiles);
+    const existingCount = await Setting.countDocuments();
+    if (existingCount === 0) {
+      await Setting.insertMany(settingFiles);
+      console.log('👍 Settings created : Done!');
+    } else {
+      console.log('ℹ️ Settings already exist : Skipped duplicate insertion.');
+    }
 
-    console.log('👍 Settings created : Done!');
-
-    console.log('🥳 Setup completed :Success!');
-    process.exit();
+    console.log('🥳 Setup completed : Success!');
+    process.exit(0);
   } catch (e) {
     console.log('\n🚫 Error! The Error info is below');
     console.log(e);
-    process.exit();
+    process.exit(1);
   }
 }
 

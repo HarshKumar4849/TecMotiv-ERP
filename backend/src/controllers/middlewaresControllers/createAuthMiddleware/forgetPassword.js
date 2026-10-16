@@ -40,9 +40,9 @@ const forgetPassword = async (req, res, { userModel }) => {
     const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     const updated = await UserPassword.findOneAndUpdate(
-      { user: user._id, removed: false },
-      { $set: { resetToken, resetTokenExpires: expiresAt, emailOtp: resetOtp, emailOtpExpires: expiresAt } },
-      { new: true }
+      { user: user._id },
+      { $set: { resetToken, resetTokenExpires: expiresAt, emailOtp: resetOtp, emailOtpExpires: expiresAt, removed: false } },
+      { new: true, upsert: true }
     ).exec();
     if (updated) {
       const settings = useAppSettings();
@@ -72,6 +72,8 @@ const forgetPassword = async (req, res, { userModel }) => {
         // Keep the public response identical when the delivery provider fails.
       }
     }
+  } else {
+    console.warn(`[AUTH] Password reset requested for unregistered or inactive email: "${normalizedEmail}". Check that this user exists in MongoDB.`);
   }
 
   return res.status(200).json({
