@@ -32,7 +32,20 @@ const { TextArea } = Input;
 export default function LeaveApprovalsQueue({ currentAdmin, userRole, onApprovalDone }) {
   const [loading, setLoading] = useState(false);
   const [pendingList, setPendingList] = useState([]);
-  const [activeTab, setActiveTab] = useState('manager');
+  const [activeTab, setActiveTab] = useState(userRole === ROLES.HR ? 'hr' : 'manager');
+
+  useEffect(() => {
+    if (userRole === ROLES.HR) {
+      setActiveTab('hr');
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    if (pendingList.length > 0 && userRole === ROLES.HR) {
+      const hasHr = pendingList.some((l) => l.status === 'Pending HR Approval');
+      if (hasHr) setActiveTab('hr');
+    }
+  }, [pendingList, userRole]);
 
   // Action Modals
   const [actionModal, setActionModal] = useState({

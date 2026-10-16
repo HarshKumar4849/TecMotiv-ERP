@@ -242,8 +242,26 @@ const deleteNotification = async (req, res) => {
     notification.removed = true;
     await notification.save();
 
+    const remainingUnread = await Notification.countDocuments({
+      recipient: user._id,
+      read: false,
+      removed: false,
+    });
+
+    if (io) {
+      try {
+        io.to(`user_${user._id}`).emit('unread-count', {
+          success: true,
+          count: remainingUnread,
+        });
+      } catch (emitError) {
+        console.warn('Socket.IO deleteNotification emission failed:', emitError.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
+      unreadCount: remainingUnread,
       message: 'Notification dismissed',
     });
   } catch (error) {

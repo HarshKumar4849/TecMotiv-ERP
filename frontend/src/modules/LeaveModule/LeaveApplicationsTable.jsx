@@ -16,6 +16,7 @@ import {
   Popover,
   Timeline,
   message,
+  Modal,
 } from 'antd';
 import {
   SearchOutlined,
@@ -27,6 +28,8 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   HistoryOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { request } from '@/request';
@@ -121,6 +124,63 @@ export default function LeaveApplicationsTable({ currentAdmin, userRole, onRefre
       message.error(err?.response?.data?.message || err.message || 'Error cancelling leave');
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const [approvingId, setApprovingId] = useState(null);
+  const [rejectModal, setRejectModal] = useState({ open: false, record: null, reason: '' });
+  const [submittingReject, setSubmittingReject] = useState(false);
+
+  const handleQuickApprove = async (record) => {
+    try {
+      setApprovingId(record._id);
+      const stage = record.status === 'Pending HR Approval' ? 'hr-approval' : 'manager-approval';
+      const res = await request.patch({
+        entity: `leave/${stage}/${record._id}`,
+        jsonData: { action: 'Approve', remarks: 'Approved' },
+      });
+      if (res?.success) {
+        message.success(res.message || 'Leave approved successfully');
+        fetchLeaves(pagination.current, pagination.pageSize);
+        if (onRefreshBalances) onRefreshBalances();
+      } else {
+        message.error(res?.message || 'Failed to approve leave');
+      }
+    } catch (err) {
+      message.error(err?.response?.data?.message || err.message || 'Error approving leave');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectModal.reason.trim()) {
+      message.error('Please enter a rejection reason');
+      return;
+    }
+    try {
+      setSubmittingReject(true);
+      const stage = rejectModal.record?.status === 'Pending HR Approval' ? 'hr-approval' : 'manager-approval';
+      const res = await request.patch({
+        entity: `leave/${stage}/${rejectModal.record?._id}`,
+        jsonData: {
+          action: 'Reject',
+          remarks: rejectModal.reason.trim(),
+          rejectionReason: rejectModal.reason.trim(),
+        },
+      });
+      if (res?.success) {
+        message.success('Leave request rejected');
+        setRejectModal({ open: false, record: null, reason: '' });
+        fetchLeaves(pagination.current, pagination.pageSize);
+        if (onRefreshBalances) onRefreshBalances();
+      } else {
+        message.error(res?.message || 'Failed to reject leave');
+      }
+    } catch (err) {
+      message.error(err?.response?.data?.message || err.message || 'Error rejecting leave');
+    } finally {
+      setSubmittingReject(false);
     }
   };
 
@@ -304,39 +364,95 @@ export default function LeaveApplicationsTable({ currentAdmin, userRole, onRefre
     {
       title: 'Action',
       key: 'action',
-      width: 110,
+      width: 175,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => {
-        const canCancel = ['Pending Manager Approval', 'Pending HR Approval', 'Approved'].includes(record.status);
+        const isOwn =
+          (record.user && record.user.toString() === currentAdmin?._id?.toString()) ||
+          (record.employee?._id && currentAdmin?.employeeId && record.employee.employeeId === currentAdmin.employeeId);
+
+        const canHrApprove = isHrOrAdmin && record.status === 'Pending HR Approval' && !isOwn;
+        const canMgrApprove = isHrOrAdmin && record.status === 'Pending Manager Approval' && !isOwn;
+        const canCancel = isOwn && ['Pending Manager Approval', 'Pending HR Approval'].includes(record.status);
         const isCancelling = cancellingId === record._id;
-        return (
-          <Space size={6}>
-            {canCancel && (
-              <Popconfirm
-                title="Cancel this leave request?"
-                description="This will restore your leave quota balance."
-                onConfirm={(e) => {
-                  e?.stopPropagation();
-                  handleCancelLeave(record._id);
+        const isApproving = approvingId === record._id;
+
+        if (canHrApprove || canMgrApprove) {
+          return (
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                loading={isApproving}
+                style={{
+                  backgroundColor: '#10B981',
+                  borderColor: '#10B981',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  height: 28,
+                  padding: '0 10px',
                 }}
-                okText="Yes, Cancel"
-                cancelText="No"
-                placement="topLeft"
-                okButtonProps={{ loading: isCancelling, danger: true }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuickApprove(record);
+                }}
               >
-                <Button
-                  type="link"
-                  danger
-                  size="small"
-                  loading={isCancelling}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Cancel
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
-        );
+                Approve
+              </Button>
+              <Button
+                danger
+                size="small"
+                icon={<CloseOutlined />}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  height: 28,
+                  padding: '0 10px',
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRejectModal({ open: true, record, reason: '' });
+                }}
+              >
+                Reject
+              </Button>
+            </div>
+          );
+        }
+
+        if (canCancel) {
+          return (
+            <Popconfirm
+              title="Cancel this leave request?"
+              description="This will restore your leave quota balance."
+              onConfirm={(e) => {
+                e?.stopPropagation();
+                handleCancelLeave(record._id);
+              }}
+              okText="Yes, Cancel"
+              cancelText="No"
+              placement="topLeft"
+              okButtonProps={{ loading: isCancelling, danger: true }}
+            >
+              <Button
+                type="link"
+                danger
+                size="small"
+                loading={isCancelling}
+                style={{ fontWeight: 500, fontSize: 12 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Cancel
+              </Button>
+            </Popconfirm>
+          );
+        }
+
+        return <Text type="secondary" style={{ fontSize: 13 }}>—</Text>;
       },
     },
   ];
@@ -467,6 +583,32 @@ export default function LeaveApplicationsTable({ currentAdmin, userRole, onRefre
         currentAdmin={currentAdmin}
         userRole={userRole}
       />
+
+      {/* REJECTION REASON MODAL */}
+      <Modal
+        title="Reject Leave Request"
+        open={rejectModal.open}
+        onCancel={() => setRejectModal({ open: false, record: null, reason: '' })}
+        onOk={handleConfirmReject}
+        confirmLoading={submittingReject}
+        okText="Confirm Rejection"
+        okButtonProps={{ danger: true }}
+      >
+        <p style={{ marginBottom: 12 }}>
+          Please specify a reason for rejecting this leave request for{' '}
+          <strong>
+            {rejectModal.record?.employee?.name ? `${rejectModal.record.employee.name} ${rejectModal.record.employee.surname || ''}` : 'the employee'}
+          </strong>:
+        </p>
+        <Input.TextArea
+          rows={3}
+          placeholder="e.g. Critical release scheduled, insufficient team coverage..."
+          value={rejectModal.reason}
+          onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+          maxLength={250}
+          showCount
+        />
+      </Modal>
     </Card>
   );
 }

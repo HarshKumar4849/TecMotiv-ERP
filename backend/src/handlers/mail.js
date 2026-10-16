@@ -19,6 +19,8 @@ exports.send = async ({ to, subject, html, text }) => {
     process.env.EMAIL_FROM ||
     (process.env.EMAIL_USER ? `TecMotiv ERP <${process.env.EMAIL_USER}>` : 'TecMotiv ERP <no-reply@tecmotiv.com>');
 
+  let lastError = null;
+
   if (transporter) {
     try {
       const info = await transporter.sendMail({
@@ -28,9 +30,10 @@ exports.send = async ({ to, subject, html, text }) => {
         text,
         html,
       });
-      return info;
+      return { success: true, provider: 'smtp', info };
     } catch (err) {
-      console.warn('Nodemailer send failed:', err.message);
+      lastError = err;
+      console.error('Nodemailer send failed:', err.message);
     }
   }
 
@@ -44,17 +47,23 @@ exports.send = async ({ to, subject, html, text }) => {
         html,
       });
       if (error) {
-        console.warn('Resend returned error:', error.message || error);
+        lastError = error;
+        console.error('Resend returned error:', error.message || error);
       } else {
-        return data;
+        return { success: true, provider: 'resend', data };
       }
     } catch (err) {
-      console.warn('Resend send failed:', err.message);
+      lastError = err;
+      console.error('Resend send failed:', err.message);
     }
   }
 
+  if (lastError) {
+    throw new Error(`Email delivery failed: ${lastError.message || 'SMTP server rejected the request'}`);
+  }
+
   console.warn('Email dispatch simulated (no active email provider):', { to, subject });
-  return { status: 'simulated', to, subject };
+  return { success: true, provider: 'simulated', to, subject };
 };
 
 exports.verify = async () => {

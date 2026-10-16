@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Tabs, Typography, Space, Tag, Badge } from 'antd';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { selectCurrentAdmin } from '@/redux/auth/selectors';
 import { normalizeRole, ROLES } from '@/utils/rbac';
+import { request } from '@/request';
 
 import LeaveBalanceCards from '@/modules/LeaveModule/LeaveBalanceCards';
 import LeaveApplicationsTable from '@/modules/LeaveModule/LeaveApplicationsTable';
@@ -24,12 +25,29 @@ export default function Leave() {
   const userRole = normalizeRole(currentAdmin?.role);
   const [activeTab, setActiveTab] = useState('applications');
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
   const isHrOrAdmin = userRole === ROLES.HR || userRole === ROLES.ADMIN;
 
   const handleRefreshAll = () => {
     setBalanceRefreshKey((prev) => prev + 1);
   };
+
+  useEffect(() => {
+    if (isHrOrAdmin) {
+      request
+        .get({ entity: 'leave/approvals-queue' })
+        .then((res) => {
+          if (res?.result) {
+            const count = res.result.filter((r) =>
+              userRole === ROLES.HR ? r.status === 'Pending HR Approval' : true
+            ).length;
+            setPendingApprovalsCount(count);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [userRole, balanceRefreshKey]);
 
   const tabItems = [
     {
@@ -89,7 +107,14 @@ export default function Leave() {
             key: 'approvals',
             label: (
               <span style={{ fontSize: 14, fontWeight: 600 }}>
-                <CheckCircleOutlined style={{ marginRight: 6 }} /> Leave Approvals Queue
+                <CheckCircleOutlined style={{ marginRight: 6 }} />
+                Leave Approvals Queue{' '}
+                {pendingApprovalsCount > 0 && (
+                  <Badge
+                    count={pendingApprovalsCount}
+                    style={{ backgroundColor: '#2563eb', marginLeft: 4 }}
+                  />
+                )}
               </span>
             ),
             children: (

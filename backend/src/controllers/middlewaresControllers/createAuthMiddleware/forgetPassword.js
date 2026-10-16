@@ -33,7 +33,38 @@ const forgetPassword = async (req, res, { userModel }) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const user = await User.findOne({ email: normalizedEmail, removed: false });
+  let user = await User.findOne({ email: normalizedEmail, removed: false });
+
+  if (!user) {
+    try {
+      const Employee = mongoose.model('Employee');
+      const emp = await Employee.findOne({ email: normalizedEmail, removed: false });
+      if (emp) {
+        const isHr =
+          emp.departmentName === 'Human Resources' ||
+          emp.departmentName === 'HR' ||
+          (emp.designationName && /HR|People|Human Resource/i.test(emp.designationName));
+
+        user = new User({
+          name: emp.name || 'Employee',
+          surname: emp.surname || '',
+          email: normalizedEmail,
+          employeeId: emp.employeeId,
+          role: isHr ? 'HR' : 'EMPLOYEE',
+          department: emp.departmentName || '',
+          designation: emp.designationName || '',
+          enabled: true,
+          removed: false,
+        });
+        await user.save();
+        emp.user = user._id;
+        await emp.save();
+      }
+    } catch (e) {
+      console.error('Error finding employee in forgetPassword:', e);
+    }
+  }
+
   if (user) {
     const rawToken = (await randomBytes(32)).toString('hex');
     const resetToken = crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -66,10 +97,13 @@ const forgetPassword = async (req, res, { userModel }) => {
           idurar_app_email,
           type: 'passwordVerfication',
         });
-        console.log(`[AUTH] Password reset email dispatched for ${normalizedEmail}. Code: ${resetOtp} | Link: ${link}`);
       } catch (mailErr) {
         console.error('Password reset email failed to send:', mailErr.message);
-        // Keep the public response identical when the delivery provider fails.
+        return res.status(500).json({
+          success: false,
+          result: null,
+          message: 'Unable to deliver password reset email. Please contact your Administrator to reset your password directly.',
+        });
       }
     }
   } else {
