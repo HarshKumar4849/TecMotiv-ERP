@@ -10,11 +10,37 @@ if (major < 20) {
   process.exit();
 }
 
-// import environmental variables from our variables.env file
+// Robust environmental variable resolution across execution directories
+const envBackendPath = path.resolve(__dirname, '../.env');
+const envBackendLocalPath = path.resolve(__dirname, '../.env.local');
+
+require('dotenv').config({ path: envBackendPath });
+require('dotenv').config({ path: envBackendLocalPath, override: true });
 require('dotenv').config({ path: '.env' });
 require('dotenv').config({ path: '.env.local', override: true });
 
-mongoose.connect(process.env.DATABASE);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ Unhandled Promise Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${process.env.PORT || 8888} is already in use by another process.`);
+    console.error(`💡 Solution: Stop the running process on port ${process.env.PORT || 8888} or specify PORT=<new_port> in your .env file.`);
+    process.exit(1);
+  }
+  console.error('❌ Uncaught Exception:', err);
+});
+
+if (!process.env.DATABASE) {
+  console.error('❌ Error: DATABASE environment variable is not defined.');
+  console.error(`Checked: ${envBackendPath}`);
+} else {
+  mongoose.connect(process.env.DATABASE).catch((error) => {
+    console.error(`1. 🔥 Common Error caused issue → : check your .env file and MongoDB connectivity`);
+    console.error(`2. 🚫 Error → : ${error.message}`);
+  });
+}
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -161,6 +187,16 @@ try {
     }
   });
 
+  http.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${app.get('port')} is already in use by another process.`);
+      console.error(`💡 Solution: Stop the running process on port ${app.get('port')} or set PORT=<port> in your .env file.`);
+    } else {
+      console.error('❌ HTTP server error:', err.message);
+    }
+    process.exit(1);
+  });
+
   const httpServer = http.listen(app.get('port'), () => {
     console.log(`Server running → HTTP: ${httpServer.address().port}, Socket.IO enabled`);
   });
@@ -174,6 +210,15 @@ try {
   console.error('Failed to initialize Socket.IO:', ioError.message);
   const server = app.listen(app.get('port'), () => {
     console.log(`Express running → On PORT : ${app.get('port')} (Socket.IO disabled)`);
+  });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${app.get('port')} is already in use by another process.`);
+      console.error(`💡 Solution: Stop the running process on port ${app.get('port')} or set PORT=<port> in your .env file.`);
+    } else {
+      console.error('❌ Express server error:', err.message);
+    }
+    process.exit(1);
   });
   module.exports = { app, server };
 }

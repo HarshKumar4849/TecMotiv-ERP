@@ -1,11 +1,18 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env.local'), override: true });
 require('dotenv').config({ path: '.env' });
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env.local', override: true });
 const { globSync } = require('glob');
 const fs = require('fs');
 const { generate: uniqueId } = require('shortid');
 
 const mongoose = require('mongoose');
-mongoose.connect(process.env.DATABASE);
+if (process.env.DATABASE) {
+  mongoose.connect(process.env.DATABASE).catch((err) => {
+    console.error('Database connection error in setup:', err.message);
+  });
+}
 
 async function setupApp() {
   try {
