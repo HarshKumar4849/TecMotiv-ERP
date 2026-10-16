@@ -69,9 +69,35 @@ let isInitialized = false;
 
 try {
   const http = require('http').createServer(app);
+  const defaultLocalOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:5173',
+    'http://localhost:8888',
+  ];
+
+  const configuredOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/+$/, ''))
+    : [];
+
+  const allowedOrigins = [...new Set([...configuredOrigins, ...defaultLocalOrigins])];
+
   const ioModule = require('socket.io')(http, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://127.0.0.1:4173',
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const cleanOrigin = origin.replace(/\/+$/, '');
+        const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+        const isVercel = /\.vercel\.app$/.test(cleanOrigin);
+        if (isLocalhost || isVercel || allowedOrigins.includes(cleanOrigin) || process.env.NODE_ENV !== 'production') {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -102,9 +128,19 @@ try {
           user: null,
           admin: null,
         };
+        let authFailed = false;
         const dummyRes = {
-          status: () => dummyRes,
-          json: () => dummyRes,
+          status: (code) => {
+            if (code >= 400) authFailed = true;
+            return dummyRes;
+          },
+          json: () => {
+            if (authFailed) {
+              console.warn('Socket authentication rejected by isValidAuthToken');
+              socket.disconnect();
+            }
+            return dummyRes;
+          },
         };
         adminAuth.isValidAuthToken(
           dummyReq,

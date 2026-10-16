@@ -167,7 +167,7 @@ export default function EmployeeFormDrawer({
                       <Form.Item
                         name="employeeId"
                         label="Employee ID"
-                        rules={[{ required: true, message: 'Employee ID is required' }]}
+                        tooltip="Auto-generated if left blank"
                       >
                         <Input
                           placeholder="e.g. TM-1001"
@@ -244,10 +244,22 @@ export default function EmployeeFormDrawer({
 
                   <Row gutter={16}>
                     <Col span={12}>
+                      <Form.Item
+                        name="loginPassword"
+                        label="Initial Login Password"
+                        tooltip="Defaults to admin123 if left empty. The employee will use this password and their Official Company Email to log in."
+                      >
+                        <Input.Password placeholder="Default: admin123 (Optional)" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
                       <Form.Item name="phone" label="Mobile Phone">
                         <Input placeholder="e.g. +1-555-0199" />
                       </Form.Item>
                     </Col>
+                  </Row>
+
+                  <Row gutter={16}>
                     <Col span={12}>
                       <Form.Item name="birthDate" label="Date of Birth">
                         <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
@@ -320,7 +332,6 @@ export default function EmployeeFormDrawer({
                       <Form.Item
                         name="joiningDate"
                         label="Date of Joining"
-                        rules={[{ required: true, message: 'Joining date is required' }]}
                       >
                         <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
                       </Form.Item>
@@ -329,9 +340,8 @@ export default function EmployeeFormDrawer({
                       <Form.Item
                         name="employmentType"
                         label="Employment Type"
-                        rules={[{ required: true, message: 'Employment type is required' }]}
                       >
-                        <Select placeholder="Select type">
+                        <Select placeholder="Select type (e.g. Full Time)" allowClear>
                           <Option value="Full Time">Full Time</Option>
                           <Option value="Part Time">Part Time</Option>
                           <Option value="Intern">Intern</Option>
@@ -346,9 +356,8 @@ export default function EmployeeFormDrawer({
                       <Form.Item
                         name="department"
                         label="Department"
-                        rules={[{ required: true, message: 'Department is required' }]}
                       >
-                        <Select placeholder="Select Department" showSearch optionFilterProp="children">
+                        <Select placeholder="Select Department (Optional)" allowClear showSearch optionFilterProp="children">
                           {departments.map((d) => (
                             <Option key={d._id} value={d._id}>
                               {d.name} ({d.code || 'DEPT'})
@@ -361,9 +370,8 @@ export default function EmployeeFormDrawer({
                       <Form.Item
                         name="designation"
                         label="Designation / Role"
-                        rules={[{ required: true, message: 'Designation is required' }]}
                       >
-                        <Select placeholder="Select Designation" showSearch optionFilterProp="children">
+                        <Select placeholder="Select Designation (Optional)" allowClear showSearch optionFilterProp="children">
                           {designations.map((dg) => (
                             <Option key={dg._id} value={dg._id}>
                               {dg.name} {dg.level ? `(${dg.level})` : ''}

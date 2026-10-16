@@ -93,6 +93,10 @@ async function seedRbacData() {
     const desigData = [
       { name: 'Managing Director', code: 'MD', dept: 'Executive', level: 'Executive' },
       { name: 'Head of People', code: 'HOP', dept: 'Human Resources', level: 'Director' },
+      { name: 'HR Manager', code: 'HRM', dept: 'Human Resources', level: 'Manager' },
+      { name: 'HR Specialist', code: 'HRS', dept: 'Human Resources', level: 'Mid' },
+      { name: 'HR Generalist', code: 'HRG', dept: 'Human Resources', level: 'Mid' },
+      { name: 'Talent Acquisition Lead', code: 'TAL', dept: 'Human Resources', level: 'Lead' },
       { name: 'Finance Controller', code: 'FC', dept: 'Finance', level: 'Manager' },
       { name: 'Systems Administrator', code: 'SA', dept: 'Administration', level: 'Lead' },
       { name: 'VP of Engineering', code: 'VPE', dept: 'Engineering', level: 'Director' },

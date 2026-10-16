@@ -152,6 +152,7 @@ const notify = async ({
   data = {},
   priority = 'normal',
   channels = ['in_app', 'email', 'whatsapp'],
+  eventId,
 }) => {
   if (!recipient) {
     throw new Error('Recipient is required for notification.');
@@ -249,6 +250,41 @@ const notify = async ({
         notificationDoc.channelStatuses.email = emailStatus;
         notificationDoc.channelStatuses.whatsapp = whatsappStatus;
         await notificationDoc.save();
+      }
+
+      // Real-time Socket.IO emission to recipient room
+      if (allowInApp && notificationDoc) {
+        try {
+          const { getSocketIO } = require('../socket');
+          const io = getSocketIO();
+          if (io) {
+            const unreadCount = await Notification.countDocuments({
+              recipient: rId,
+              read: false,
+              removed: false,
+            });
+            const latestNotifications = await Notification.find({
+              recipient: rId,
+              removed: false,
+            })
+              .sort({ created: -1 })
+              .limit(20)
+              .lean();
+
+            io.to(`user_${rId}`).emit('unread-count', {
+              success: true,
+              count: unreadCount,
+            });
+            io.to(`user_${rId}`).emit('notification-list', {
+              success: true,
+              notifications: latestNotifications,
+              unreadCount,
+              newNotification: notificationDoc,
+            });
+          }
+        } catch (socketErr) {
+          console.warn(`Socket.IO live emission failed for recipient ${rId}:`, socketErr.message);
+        }
       }
 
       results.push({

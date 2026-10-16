@@ -94,6 +94,15 @@ const verifyOtp = async (req, res, { userModel }) => {
           await empDoc.save();
         }
         user.employeeId = empDoc.employeeId;
+        const isHr =
+          empDoc.departmentName === 'Human Resources' ||
+          empDoc.departmentName === 'HR' ||
+          (empDoc.designationName && /HR|People|Human Resource/i.test(empDoc.designationName));
+        if (isHr) {
+          user.role = 'HR';
+          user.department = empDoc.departmentName || 'Human Resources';
+          user.designation = empDoc.designationName || 'HR';
+        }
       }
     }
 

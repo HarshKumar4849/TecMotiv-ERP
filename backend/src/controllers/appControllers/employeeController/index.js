@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { ROLES, normalizeRole } = require('../../../rbac/roles');
 
 const isEmployeeRole = (req) => {
@@ -294,6 +295,71 @@ const employeeController = {
     const newEmployee = new Employee(body);
     const result = await newEmployee.save();
 
+    // Auto-provision user login account (Admin + AdminPassword) so the employee/HR can immediately log in
+    try {
+      const AdminModel = mongoose.model('Admin');
+      const AdminPasswordModel = mongoose.model('AdminPassword');
+      const cleanEmail = body.email.toLowerCase().trim();
+
+      let userAccount = await AdminModel.findOne({ email: cleanEmail, removed: false });
+
+      const isHrRole =
+        body.departmentName === 'Human Resources' ||
+        body.departmentName === 'HR' ||
+        (body.designationName && /HR|People|Human Resource/i.test(body.designationName));
+
+      const assignedRole = isHrRole ? 'HR' : 'EMPLOYEE';
+
+      if (!userAccount) {
+        userAccount = new AdminModel({
+          name: body.name ? body.name.trim() : 'Employee',
+          surname: body.surname ? body.surname.trim() : '',
+          email: cleanEmail,
+          employeeId: body.employeeId,
+          role: assignedRole,
+          department: body.departmentName || '',
+          designation: body.designationName || '',
+          enabled: true,
+          removed: false,
+        });
+        await userAccount.save();
+
+        const initialPassword = body.loginPassword || 'admin123';
+        const userPassword = new AdminPasswordModel({ user: userAccount._id });
+        const salt = bcrypt.genSaltSync(10);
+        userPassword.salt = salt;
+        userPassword.password = userPassword.generateHash(salt, initialPassword);
+        userPassword.emailVerified = true;
+        await userPassword.save();
+      } else {
+        if (!userAccount.employeeId) userAccount.employeeId = body.employeeId;
+        if (body.departmentName) userAccount.department = body.departmentName;
+        if (body.designationName) userAccount.designation = body.designationName;
+        if (isHrRole && userAccount.role === 'EMPLOYEE') {
+          userAccount.role = 'HR';
+        }
+        userAccount.enabled = true;
+        await userAccount.save();
+
+        if (body.loginPassword) {
+          let userPassword = await AdminPasswordModel.findOne({ user: userAccount._id });
+          if (!userPassword) {
+            userPassword = new AdminPasswordModel({ user: userAccount._id });
+          }
+          const salt = bcrypt.genSaltSync(10);
+          userPassword.salt = salt;
+          userPassword.password = userPassword.generateHash(salt, body.loginPassword);
+          userPassword.emailVerified = true;
+          await userPassword.save();
+        }
+      }
+
+      result.user = userAccount._id;
+      await result.save();
+    } catch (provisionErr) {
+      console.error('Error auto-provisioning login account for employee:', provisionErr);
+    }
+
     const populated = await Employee.findById(result._id)
       .populate('department', 'name code')
       .populate('designation', 'name code level')
@@ -493,6 +559,39 @@ const employeeController = {
       .populate('reportingManager', 'name surname employeeId email photo')
       .populate('assignedProjects', 'name code status')
       .populate('user', 'email role');
+
+    if (updated && updated.user) {
+      try {
+        const AdminModel = mongoose.model('Admin');
+        const AdminPasswordModel = mongoose.model('AdminPassword');
+        const isHrRole =
+          updated.departmentName === 'Human Resources' ||
+          updated.departmentName === 'HR' ||
+          (updated.designationName && /HR|People|Human Resource/i.test(updated.designationName));
+
+        const userUpdates = {};
+        if (isHrRole) userUpdates.role = 'HR';
+        if (updated.departmentName) userUpdates.department = updated.departmentName;
+        if (updated.designationName) userUpdates.designation = updated.designationName;
+        if (Object.keys(userUpdates).length > 0) {
+          await AdminModel.findByIdAndUpdate(updated.user, userUpdates);
+        }
+
+        if (body.loginPassword) {
+          let userPassword = await AdminPasswordModel.findOne({ user: updated.user });
+          if (!userPassword) {
+            userPassword = new AdminPasswordModel({ user: updated.user });
+          }
+          const salt = bcrypt.genSaltSync(10);
+          userPassword.salt = salt;
+          userPassword.password = userPassword.generateHash(salt, body.loginPassword);
+          userPassword.emailVerified = true;
+          await userPassword.save();
+        }
+      } catch (syncErr) {
+        console.error('Error syncing user account on employee update:', syncErr);
+      }
+    }
 
     return res.status(200).json({
       success: true,
